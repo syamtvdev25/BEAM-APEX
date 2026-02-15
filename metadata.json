@@ -1,0 +1,5 @@
+{
+  "name": "Apex-Ecom",
+  "description": "A production-ready hybrid mobile application boilerplate using React, TypeScript, Tailwind CSS, and Capacitor for Android deployment.",
+  "requestFramePermissions": []
+}
