@@ -15,11 +15,11 @@ import BearingsScreen from './components/BearingsScreen';
 import BatteriesScreen from './components/BatteriesScreen';
 import ImportScreen from './components/ImportScreen';
 import SearchScreen from './components/SearchScreen';
+import CartSelectionScreen from './components/CartSelectionScreen';
 import ItemDetailsScreen from './components/ItemDetailsScreen';
 import ItemQueryScreen from './components/ItemQueryScreen';
 import { loginApi } from './api/authApi';
 
-// Auth Context for simple state management
 const AuthContext = createContext<AppContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -37,19 +37,16 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
 
-  // Restore session on startup
   useEffect(() => {
-    const savedUser = sessionStorage.getItem('apex_user');
     const savedToken = sessionStorage.getItem('apex_token');
+    const savedAuthUser = localStorage.getItem('authUser');
     
-    if (savedUser && savedToken) {
+    if (savedToken && savedAuthUser) {
       try {
-        const parsedUser = JSON.parse(savedUser) as User;
+        const parsedUser = JSON.parse(savedAuthUser) as User;
         setUser(parsedUser);
       } catch (e) {
-        console.error("Failed to restore session", e);
-        sessionStorage.removeItem('apex_user');
-        sessionStorage.removeItem('apex_token');
+        logout();
       }
     }
   }, []);
@@ -57,35 +54,32 @@ const App: React.FC = () => {
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     try {
       const response = await loginApi(username, password);
-      
       if (response.success && response.token) {
         const userData: User = {
-          username: username,
+          username,
+          userId: username,
           customerCode: response.customerCode || '',
           customerName: response.customerName || '',
+          displayName: response.customerName || username,
           country: response.country || '',
-          userType: response.userType || '',
+          userType: response.userType || 'User',
+          role: response.userType || 'User',
           token: response.token
         };
-
-        // Persist session
         sessionStorage.setItem('apex_token', response.token);
-        sessionStorage.setItem('apex_user', JSON.stringify(userData));
-        
+        localStorage.setItem('authUser', JSON.stringify(userData));
         setUser(userData);
         return true;
       }
       return false;
     } catch (error) {
-      console.error("Login failed:", error);
-      // Propagate error to let the UI handle specific messaging
       throw error;
     }
   }, []);
 
   const logout = useCallback(() => {
     sessionStorage.removeItem('apex_token');
-    sessionStorage.removeItem('apex_user');
+    localStorage.removeItem('authUser');
     setUser(null);
   }, []);
 
@@ -94,12 +88,10 @@ const App: React.FC = () => {
       <MemoryRouter initialEntries={['/login']}>
         <div className="min-h-screen bg-gray-50 flex flex-col">
           <Routes>
-            <Route 
-              path="/login" 
-              element={!user ? <LoginScreen /> : <Navigate to="/dashboard" replace />} 
-            />
+            <Route path="/login" element={!user ? <LoginScreen /> : <Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
             <Route path="/search" element={<ProtectedRoute><SearchScreen /></ProtectedRoute>} />
+            <Route path="/cart-select" element={<ProtectedRoute><CartSelectionScreen /></ProtectedRoute>} />
             <Route path="/item-details/:itemCode/:brand/:imageType" element={<ProtectedRoute><ItemDetailsScreen /></ProtectedRoute>} />
             <Route path="/pc" element={<ProtectedRoute><PCScreen /></ProtectedRoute>} />
             <Route path="/pc-models/:manufacturer" element={<ProtectedRoute><PCModelsScreen /></ProtectedRoute>} />
@@ -112,11 +104,7 @@ const App: React.FC = () => {
             <Route path="/bearings" element={<ProtectedRoute><BearingsScreen /></ProtectedRoute>} />
             <Route path="/batteries" element={<ProtectedRoute><BatteriesScreen /></ProtectedRoute>} />
             <Route path="/import" element={<ProtectedRoute><ImportScreen /></ProtectedRoute>} />
-            
-            <Route 
-              path="*" 
-              element={<Navigate to={user ? "/dashboard" : "/login"} replace />} 
-            />
+            <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
           </Routes>
         </div>
       </MemoryRouter>

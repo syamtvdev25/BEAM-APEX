@@ -15,11 +15,11 @@ export interface LoginResponse {
 }
 
 /**
- * authenticates user against the remote Apex server.
+ * Authenticates user against the remote Apex server using the shared fetchJson utility.
  */
 export async function loginApi(userId: string, pass: string): Promise<LoginResponse> {
   const url = `${BASE_URL}?ApiKey=${API_KEY}&UserId=${encodeURIComponent(userId)}&Password=${encodeURIComponent(pass)}`;
   
-  // Login call shouldn't strictly need a Bearer token, so we use fetchJson normally.
+  // Uses existing fetchJson which handles CapacitorHttp and proxy logic
   return fetchJson<LoginResponse>(url, { method: 'GET' });
 }

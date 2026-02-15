@@ -1,10 +1,13 @@
 
 export interface User {
   username: string;
+  userId: string;
   customerCode: string;
   customerName: string;
+  displayName: string;
   country: string;
   userType: string;
+  role: string;
   token: string;
 }
 

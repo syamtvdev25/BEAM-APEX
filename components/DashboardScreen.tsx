@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from '../App';
 import { useNavigate } from 'react-router-dom';
+import { User } from '../types';
 
 interface MenuItem {
   id: string;
@@ -11,8 +12,35 @@ interface MenuItem {
 }
 
 const DashboardScreen: React.FC = () => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Robust user resolution: Context -> LocalStorage fallback
+  const effectiveUser = useMemo(() => {
+    if (user && user.displayName) return user;
+    const stored = localStorage.getItem('authUser');
+    if (stored) {
+      try {
+        return JSON.parse(stored) as User;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }, [user]);
+
+  // Helper to generate initials from displayName
+  const getInitials = (name: string) => {
+    if (!name) return "??";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const menuItems: MenuItem[] = [
     { 
@@ -83,18 +111,41 @@ const DashboardScreen: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col bg-gradient-to-b from-blue-50/50 to-white">
-      {/* Premium Header with APEX Blue Gradient */}
-      <header className="bg-gradient-to-r from-[#003366] to-[#00599F] px-6 py-5 flex items-center justify-between sticky top-0 z-30 shadow-xl rounded-b-[24px]">
-        <h2 className="text-xl font-black text-white tracking-tight uppercase">Apex-Ecom</h2>
-        <button 
-          onClick={logout}
-          className="flex items-center space-x-2 text-[10px] font-black text-white px-3 py-2 rounded-full border border-white/20 bg-white/10 hover:bg-[#F37021] transition-all active:scale-90 shadow-sm"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span className="hidden xs:inline tracking-widest uppercase">Logout</span>
-        </button>
+      {/* Premium Header with Fixed User Display */}
+      <header className="bg-gradient-to-r from-[#003366] to-[#00599F] px-4 xs:px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-xl rounded-b-[24px]">
+        {/* Left Section: Title & Customer Name */}
+        <div className="flex flex-col min-w-0">
+          <h2 className="text-[10px] font-black text-white/70 tracking-widest uppercase leading-none mb-1">Apex-Ecom</h2>
+          {effectiveUser && (
+            <span className="text-[13px] font-black text-white uppercase tracking-tight leading-tight truncate max-w-[200px] sm:max-w-[300px]">
+              {effectiveUser.displayName}
+            </span>
+          )}
+        </div>
+        
+        {/* Right Section: Avatar & Logout */}
+        <div className="flex items-center space-x-2 sm:space-x-4 ml-2 shrink-0">
+          {effectiveUser && (
+            <div className="flex items-center space-x-2">
+              {/* User Avatar Circle with Initials */}
+              <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg border-2 border-white/20 shrink-0">
+                <span className="text-sm font-black text-white tracking-tighter">
+                  {getInitials(effectiveUser.displayName)}
+                </span>
+              </div>
+            </div>
+          )}
+          
+          <button 
+            onClick={handleLogout}
+            className="flex items-center justify-center p-2.5 rounded-xl border border-white/20 bg-white/10 hover:bg-red-500/80 transition-all active:scale-90 shadow-sm group"
+            title="Logout"
+          >
+            <svg className="w-5 h-5 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {/* Grid Menu Content Area */}
@@ -106,17 +157,13 @@ const DashboardScreen: React.FC = () => {
               onClick={() => handleMenuPress(item)}
               className="flex flex-col items-center justify-center aspect-square bg-white rounded-[32px] shadow-sm shadow-blue-900/5 border border-slate-50 p-6 transition-all hover:shadow-xl hover:-translate-y-1 active:scale-95 group relative overflow-hidden"
             >
-              {/* Soft glass effect hover background */}
               <div className="absolute inset-0 bg-gradient-to-br from-transparent to-blue-50/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-              
               <div className="relative z-10 w-16 h-16 bg-blue-50/50 rounded-2xl flex items-center justify-center mb-4 transition-all group-hover:scale-110 group-hover:bg-white group-hover:shadow-lg duration-300">
                 <div className="text-[#00599F] transition-colors group-hover:text-[#003366]">
                   {item.icon}
                 </div>
-                {/* Apex Orange Accent Detail */}
                 <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-[#F37021] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              
               <span className="relative z-10 text-[11px] font-black text-slate-700 text-center uppercase tracking-[0.15em] leading-tight">
                 {item.label}
               </span>
@@ -124,21 +171,18 @@ const DashboardScreen: React.FC = () => {
           ))}
         </div>
         
-        {/* Informational Spacing */}
         <div className="py-12 flex flex-col items-center justify-center space-y-2">
            <div className="w-8 h-0.5 bg-blue-100 rounded-full" />
            <p className="text-[11px] font-bold text-[#003366] tracking-[0.2em] uppercase">APEX-ECOMMERCE FOR AUTO SPARE PARTS</p>
         </div>
       </main>
 
-      {/* Footer Branding Bar */}
       <footer className="bg-gradient-to-r from-[#003366] to-[#00599F] py-2 flex flex-col items-center border-t border-white/10 shadow-inner">
         <p className="text-[9px] font-black text-white/50 tracking-[0.3em] uppercase">
           Powered by SKTV © 2026
         </p>
       </footer>
 
-      {/* Bottom Navigation */}
       <nav className="bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 px-6 py-4 flex justify-around items-center sticky bottom-0 z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
         <div 
           className="flex flex-col items-center text-blue-400 cursor-pointer group active:scale-95 transition-all" 
