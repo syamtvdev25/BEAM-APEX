@@ -3,10 +3,10 @@ import { Capacitor, CapacitorHttp, HttpResponse } from '@capacitor/core';
 
 /**
  * Enterprise Gateway Configuration
- * Using corsproxy.io for web-based CORS bypass to the port 83 origin.
+ * Using corsproxy.io for web-based CORS bypass to the origin.
  */
 const PROXY_BASE = 'https://corsproxy.io/?';
-const ENTERPRISE_DOMAIN = 'aog.fortiddns.com:83';
+const ENTERPRISE_DOMAIN = 'ecom.apexgulf.ae';
 
 /**
  * Global HTTP Utility for Enterprise API communication

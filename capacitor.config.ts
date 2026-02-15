@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
     // Standard androidScheme for Capacitor WebView
     androidScheme: 'http',
     allowNavigation: [
-      'aog.fortiddns.com',
+      'ecom.apexgulf.ae',
       'corsproxy.io'
     ]
   },

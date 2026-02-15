@@ -2,7 +2,7 @@
 import { fetchJson } from './http';
 
 const API_KEY = 'TEST123';
-const BASE_URL = 'https://aog.fortiddns.com:83/Apex/API/APISearchLite.ashx';
+const BASE_URL = 'https://ecom.apexgulf.ae/apex/API/APISearchLite.ashx';
 
 export interface SearchResult {
   Success: boolean;
