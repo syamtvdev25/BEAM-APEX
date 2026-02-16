@@ -1,27 +1,40 @@
-
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
-/**
- * Encodes binary data to base64 safely for Capacitor bridge.
- */
+/** Force binary input to a real ArrayBuffer (not SharedArrayBuffer-backed view) */
+const toRealArrayBuffer = (data: ArrayBuffer | Uint8Array): ArrayBuffer => {
+  if (data instanceof ArrayBuffer) return data;
+
+  // IMPORTANT: slice the exact range to get a standalone ArrayBuffer
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+};
+
+/** Encodes binary data to base64 safely for Capacitor bridge. */
 const toBase64 = (data: ArrayBuffer | Uint8Array): string => {
+  const ab = toRealArrayBuffer(data);
+  const bytes = new Uint8Array(ab);
+
   let binary = '';
-  const bytes = new Uint8Array(data);
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
   return window.btoa(binary);
 };
 
-/**
- * Handles the final step of export: Saving or sharing the file.
- */
-export const saveAndShareFile = async (data: ArrayBuffer | Uint8Array, fileName: string, mimeType: string) => {
+/** Handles the final step of export: Saving or sharing the file. */
+export const saveAndShareFile = async (
+  data: ArrayBuffer | Uint8Array,
+  fileName: string,
+  mimeType: string
+) => {
+  // normalize ONCE
+  const buffer = toRealArrayBuffer(data);
+
   if (Capacitor.isNativePlatform()) {
     try {
-      const base64Data = toBase64(data);
+      const base64Data = toBase64(buffer);
+
       const savedFile = await Filesystem.writeFile({
         path: fileName,
         data: base64Data,
@@ -34,24 +47,26 @@ export const saveAndShareFile = async (data: ArrayBuffer | Uint8Array, fileName:
           url: savedFile.uri,
           dialogTitle: 'Share or Save Report',
         });
-      } catch (shareErr) {
-        // Fallback if sharing is cancelled or fails
+      } catch {
         alert(`Report saved to Documents: ${fileName}`);
       }
     } catch (err) {
       console.error('Filesystem Error:', err);
       alert('Unable to save report to device storage.');
     }
-  } else {
-    // Web Fallback
-    const blob = new Blob([data], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    return;
   }
+
+  // Web fallback (BlobPart TS issue solved because buffer is real ArrayBuffer)
+  const blob = new Blob([buffer], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
