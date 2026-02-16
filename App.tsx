@@ -1,9 +1,19 @@
 
 import React, { useState, createContext, useContext, useCallback, useEffect } from 'react';
 import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { User, AppContextType } from './types';
+import { CartProvider } from './context/CartContext';
 import LoginScreen from './components/LoginScreen';
 import DashboardScreen from './components/DashboardScreen';
+import ERPScreen from './components/ERPScreen';
+import BackorderAvailabilityScreen from './components/BackorderAvailabilityScreen';
+import CountryTurnoverReportScreen from './components/CountryTurnoverReportScreen';
+import CountryTurnoverReportResultScreen from './components/CountryTurnoverReportResultScreen';
+import TotalCustomerSalesScreen from './components/TotalCustomerSalesScreen';
+import CustomerSalesSubgroupScreen from './components/CustomerSalesSubgroupScreen';
+import TotalCustomerSalesByCountrySalesmanFilterScreen from './components/TotalCustomerSalesByCountrySalesmanFilterScreen';
+import TotalCustomerSalesByCountrySalesmanResultScreen from './components/TotalCustomerSalesByCountrySalesmanResultScreen';
 import PCScreen from './components/PCScreen';
 import PCModelsScreen from './components/PCModelsScreen';
 import PCBrandsScreen from './components/PCBrandsScreen';
@@ -18,6 +28,7 @@ import SearchScreen from './components/SearchScreen';
 import CartSelectionScreen from './components/CartSelectionScreen';
 import ItemDetailsScreen from './components/ItemDetailsScreen';
 import ItemQueryScreen from './components/ItemQueryScreen';
+import CartPage from './components/CartPage';
 import { loginApi } from './api/authApi';
 
 const AuthContext = createContext<AppContextType | undefined>(undefined);
@@ -38,6 +49,11 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // Hide native splash screen once React is mounted and ready
+    SplashScreen.hide().catch(() => {
+      // Ignore errors on web platform where splash screen isn't present
+    });
+
     const savedToken = sessionStorage.getItem('apex_token');
     const savedAuthUser = localStorage.getItem('authUser');
     
@@ -85,29 +101,40 @@ const App: React.FC = () => {
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
-      <MemoryRouter initialEntries={['/login']}>
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-          <Routes>
-            <Route path="/login" element={!user ? <LoginScreen /> : <Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
-            <Route path="/search" element={<ProtectedRoute><SearchScreen /></ProtectedRoute>} />
-            <Route path="/cart-select" element={<ProtectedRoute><CartSelectionScreen /></ProtectedRoute>} />
-            <Route path="/item-details/:itemCode/:brand/:imageType" element={<ProtectedRoute><ItemDetailsScreen /></ProtectedRoute>} />
-            <Route path="/pc" element={<ProtectedRoute><PCScreen /></ProtectedRoute>} />
-            <Route path="/pc-models/:manufacturer" element={<ProtectedRoute><PCModelsScreen /></ProtectedRoute>} />
-            <Route path="/pc-brands/:manufacturer/:model" element={<ProtectedRoute><PCBrandsScreen /></ProtectedRoute>} />
-            <Route path="/cv" element={<ProtectedRoute><CVScreen /></ProtectedRoute>} />
-            <Route path="/axles" element={<ProtectedRoute><AxlesScreen /></ProtectedRoute>} />
-            <Route path="/engines" element={<ProtectedRoute><EnginesScreen /></ProtectedRoute>} />
-            <Route path="/description-search" element={<ProtectedRoute><DescriptionSearchScreen /></ProtectedRoute>} />
-            <Route path="/item-query" element={<ProtectedRoute><ItemQueryScreen /></ProtectedRoute>} />
-            <Route path="/bearings" element={<ProtectedRoute><BearingsScreen /></ProtectedRoute>} />
-            <Route path="/batteries" element={<ProtectedRoute><BatteriesScreen /></ProtectedRoute>} />
-            <Route path="/import" element={<ProtectedRoute><ImportScreen /></ProtectedRoute>} />
-            <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
-          </Routes>
-        </div>
-      </MemoryRouter>
+      <CartProvider>
+        <MemoryRouter initialEntries={['/login']}>
+          <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Routes>
+              <Route path="/login" element={!user ? <LoginScreen /> : <Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
+              <Route path="/erp" element={<ProtectedRoute><ERPScreen /></ProtectedRoute>} />
+              <Route path="/backorder-list" element={<ProtectedRoute><BackorderAvailabilityScreen /></ProtectedRoute>} />
+              <Route path="/country-turnover" element={<ProtectedRoute><CountryTurnoverReportScreen /></ProtectedRoute>} />
+              <Route path="/country-turnover-report/result" element={<ProtectedRoute><CountryTurnoverReportResultScreen /></ProtectedRoute>} />
+              <Route path="/customer-sales-country" element={<ProtectedRoute><TotalCustomerSalesScreen /></ProtectedRoute>} />
+              <Route path="/customer-sales-country-salesman/filter" element={<ProtectedRoute><TotalCustomerSalesByCountrySalesmanFilterScreen /></ProtectedRoute>} />
+              <Route path="/customer-sales-country-salesman/result" element={<ProtectedRoute><TotalCustomerSalesByCountrySalesmanResultScreen /></ProtectedRoute>} />
+              <Route path="/customer-sales-subgroup" element={<ProtectedRoute><CustomerSalesSubgroupScreen /></ProtectedRoute>} />
+              <Route path="/search" element={<ProtectedRoute><SearchScreen /></ProtectedRoute>} />
+              <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+              <Route path="/cart-select" element={<ProtectedRoute><CartSelectionScreen /></ProtectedRoute>} />
+              <Route path="/item-details/:itemCode/:brand/:imageType" element={<ProtectedRoute><ItemDetailsScreen /></ProtectedRoute>} />
+              <Route path="/pc" element={<ProtectedRoute><PCScreen /></ProtectedRoute>} />
+              <Route path="/pc-models/:manufacturer" element={<ProtectedRoute><PCModelsScreen /></ProtectedRoute>} />
+              <Route path="/pc-brands/:manufacturer/:model" element={<ProtectedRoute><PCBrandsScreen /></ProtectedRoute>} />
+              <Route path="/cv" element={<ProtectedRoute><CVScreen /></ProtectedRoute>} />
+              <Route path="/axles" element={<ProtectedRoute><AxlesScreen /></ProtectedRoute>} />
+              <Route path="/engines" element={<ProtectedRoute><EnginesScreen /></ProtectedRoute>} />
+              <Route path="/description-search" element={<ProtectedRoute><DescriptionSearchScreen /></ProtectedRoute>} />
+              <Route path="/item-query" element={<ProtectedRoute><ItemQueryScreen /></ProtectedRoute>} />
+              <Route path="/bearings" element={<ProtectedRoute><BearingsScreen /></ProtectedRoute>} />
+              <Route path="/batteries" element={<ProtectedRoute><BatteriesScreen /></ProtectedRoute>} />
+              <Route path="/import" element={<ProtectedRoute><ImportScreen /></ProtectedRoute>} />
+              <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
+            </Routes>
+          </div>
+        </MemoryRouter>
+      </CartProvider>
     </AuthContext.Provider>
   );
 };

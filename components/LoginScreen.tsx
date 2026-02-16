@@ -2,31 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../App';
 import { AuthState } from '../types';
-
-const ApexLogo: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 240 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M110 20C135 5 175 10 195 35" stroke="#F37021" strokeWidth="3" strokeLinecap="round" fill="none" />
-    <g id="truck-cab">
-      <path d="M78 72V58C78 54 81 52 84 52H108L122 58V72H78Z" fill="#00599F" />
-      <path d="M108 52H122V72H108V52Z" fill="#003366" />
-      <path d="M82 56H105V65H82V56Z" fill="#B0C4DE" fillOpacity="0.4" />
-      <rect x="76" y="68" width="46" height="4" fill="#111827" />
-    </g>
-    <g id="trailer">
-      <rect x="122" y="38" width="75" height="34" fill="#003366" />
-      <text x="132" y="62" fill="white" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="16">APEX</text>
-    </g>
-    <g fill="#111827">
-      <circle cx="86" cy="74" r="4.5" /><circle cx="104" cy="74" r="4.5" />
-      <circle cx="138" cy="74" r="4.5" /><circle cx="152" cy="74" r="4.5" />
-      <circle cx="178" cy="74" r="4.5" /><circle cx="192" cy="74" r="4.5" />
-    </g>
-    <g transform="translate(0, 5)">
-      <text x="92" y="88" fill="#00599F" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="20">APEX</text>
-      <text x="110" y="98" fill="#002D5A" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="9" style={{ letterSpacing: '1px' }}>E-COM</text>
-    </g>
-  </svg>
-);
+import { brandingConfig } from '../config/brandingConfig';
 
 const LoginScreen: React.FC = () => {
   const { login } = useAuth();
@@ -54,9 +30,9 @@ const LoginScreen: React.FC = () => {
     } catch (err: any) {
       setStatus(AuthState.FAILURE);
       if (err.message === 'CONNECTION_ERROR') {
-        setError('Network error: Unable to connect to the server. This may be due to CORS restrictions, Mixed Content blocking (HTTP vs HTTPS), or an unreachable server.');
+        setError('Network error: Unable to connect to the server.');
       } else {
-        setError(err.message || 'An unexpected error occurred. Please check your connection.');
+        setError(err.message || 'An unexpected error occurred.');
       }
     }
   };
@@ -70,10 +46,16 @@ const LoginScreen: React.FC = () => {
         
         <div className="flex justify-between items-start relative z-10">
           <div className="text-left">
-            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">Apex-Ecom</h1>
+            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">{brandingConfig.appName}</h1>
             <p className="text-gray-400 font-medium mt-1">Sign in to your account</p>
           </div>
-          <ApexLogo className="h-16 w-auto" />
+          <div className="h-16 w-16 bg-slate-50 rounded-2xl p-2 flex items-center justify-center border border-slate-100 shadow-sm">
+            <img 
+              src={brandingConfig.logoPath} 
+              alt={brandingConfig.appName} 
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4 relative z-10">
@@ -114,15 +96,7 @@ const LoginScreen: React.FC = () => {
               isLoading ? 'bg-blue-300' : 'bg-blue-900 hover:bg-blue-950'
             }`}
           >
-            {isLoading ? (
-              <span className="flex items-center justify-center space-x-2">
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Signing in...</span>
-              </span>
-            ) : 'Sign In'}
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 

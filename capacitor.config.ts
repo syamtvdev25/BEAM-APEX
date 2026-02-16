@@ -6,7 +6,6 @@ const config: CapacitorConfig = {
   appName: 'Apex-Ecom',
   webDir: 'dist',
   server: {
-    // Standard androidScheme for Capacitor WebView
     androidScheme: 'http',
     allowNavigation: [
       'ecom.apexgulf.ae',
@@ -17,9 +16,17 @@ const config: CapacitorConfig = {
     CapacitorHttp: {
       enabled: true,
     },
+    SplashScreen: {
+      launchShowDuration: 1500,
+      launchAutoHide: true,
+      backgroundColor: "#003366",
+      androidScaleType: "CENTER_INSIDE",
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true
+    }
   },
   android: {
-    // Crucial for communicating with non-HTTPS endpoints in hybrid apps
     allowMixedContent: true,
   }
 };
