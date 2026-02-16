@@ -2,12 +2,13 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
-/** Force binary input to a real ArrayBuffer (not SharedArrayBuffer-backed view) */
+/** Force binary input to a real ArrayBuffer (always), TS-safe even with SharedArrayBuffer */
 const toRealArrayBuffer = (data: ArrayBuffer | Uint8Array): ArrayBuffer => {
   if (data instanceof ArrayBuffer) return data;
 
-  // IMPORTANT: slice the exact range to get a standalone ArrayBuffer
-  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+  const out = new Uint8Array(data.byteLength);
+  out.set(data);
+  return out.buffer;
 };
 
 /** Encodes binary data to base64 safely for Capacitor bridge. */
@@ -16,19 +17,15 @@ const toBase64 = (data: ArrayBuffer | Uint8Array): string => {
   const bytes = new Uint8Array(ab);
 
   let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
   return window.btoa(binary);
 };
 
-/** Handles the final step of export: Saving or sharing the file. */
 export const saveAndShareFile = async (
   data: ArrayBuffer | Uint8Array,
   fileName: string,
   mimeType: string
 ) => {
-  // normalize ONCE
   const buffer = toRealArrayBuffer(data);
 
   if (Capacitor.isNativePlatform()) {
@@ -57,7 +54,7 @@ export const saveAndShareFile = async (
     return;
   }
 
-  // Web fallback (BlobPart TS issue solved because buffer is real ArrayBuffer)
+  // Web fallback
   const blob = new Blob([buffer], { type: mimeType });
   const url = URL.createObjectURL(blob);
 
