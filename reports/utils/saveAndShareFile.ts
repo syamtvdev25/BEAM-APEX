@@ -1,11 +1,11 @@
+
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
-/** Force binary input to a real ArrayBuffer (always), TS-safe even with SharedArrayBuffer */
+/** Force binary input to a real ArrayBuffer */
 const toRealArrayBuffer = (data: ArrayBuffer | Uint8Array): ArrayBuffer => {
   if (data instanceof ArrayBuffer) return data;
-
   const out = new Uint8Array(data.byteLength);
   out.set(data);
   return out.buffer;
@@ -15,7 +15,6 @@ const toRealArrayBuffer = (data: ArrayBuffer | Uint8Array): ArrayBuffer => {
 const toBase64 = (data: ArrayBuffer | Uint8Array): string => {
   const ab = toRealArrayBuffer(data);
   const bytes = new Uint8Array(ab);
-
   let binary = '';
   for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
   return window.btoa(binary);
@@ -31,7 +30,6 @@ export const saveAndShareFile = async (
   if (Capacitor.isNativePlatform()) {
     try {
       const base64Data = toBase64(buffer);
-
       const savedFile = await Filesystem.writeFile({
         path: fileName,
         data: base64Data,
@@ -57,13 +55,11 @@ export const saveAndShareFile = async (
   // Web fallback
   const blob = new Blob([buffer], { type: mimeType });
   const url = URL.createObjectURL(blob);
-
   const link = document.createElement('a');
   link.href = url;
   link.download = fileName;
   document.body.appendChild(link);
   link.click();
-
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };

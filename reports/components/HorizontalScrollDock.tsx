@@ -5,9 +5,6 @@ interface HorizontalScrollDockProps {
   scrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
-/**
- * Syncs with a table's horizontal scroll to provide a visible dock on mobile.
- */
 const HorizontalScrollDock: React.FC<HorizontalScrollDockProps> = ({ scrollRef }) => {
   const [scrollInfo, setScrollInfo] = useState({ left: 0, width: 0, client: 0 });
   const trackRef = useRef<HTMLDivElement>(null);
@@ -25,7 +22,7 @@ const HorizontalScrollDock: React.FC<HorizontalScrollDockProps> = ({ scrollRef }
     };
 
     el.addEventListener('scroll', handleScroll);
-    handleScroll(); // Init
+    handleScroll();
 
     const resizeObserver = new ResizeObserver(handleScroll);
     resizeObserver.observe(el);
@@ -42,7 +39,7 @@ const HorizontalScrollDock: React.FC<HorizontalScrollDockProps> = ({ scrollRef }
   const thumbLeftPct = (scrollInfo.left / scrollInfo.width) * 100;
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-md border-t border-slate-100 p-2 pointer-events-none">
+    <div className="sticky bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-md border-t border-slate-100 p-2 pointer-events-none">
       <div 
         ref={trackRef}
         className="h-1.5 w-full bg-slate-200 rounded-full relative overflow-hidden"
@@ -56,7 +53,7 @@ const HorizontalScrollDock: React.FC<HorizontalScrollDockProps> = ({ scrollRef }
         />
       </div>
       <div className="text-center mt-1">
-        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Swipe Table for more data</span>
+        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Swipe for more data</span>
       </div>
     </div>
   );

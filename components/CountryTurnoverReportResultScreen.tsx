@@ -5,7 +5,6 @@ import PageShell from './PageShell';
 import ReportHeaderActions from '../reports/components/ReportHeaderActions';
 import HorizontalScrollDock from '../reports/components/HorizontalScrollDock';
 import { exportToExcel, exportToPdf } from '../reports/utils/exportCountryTurnover';
-// Added clearUIState to imports
 import { saveUIState, loadUIState, clearUIState } from '../utils/uiState';
 
 const COUNTRY = "UNITED ARAB EMIRATES";
@@ -57,7 +56,6 @@ const CountryTurnoverReportResultScreen: React.FC = () => {
 
   const dateRange = `${filters.fromDate || '01/01/2026'} TO ${filters.toDate || '16/02/2026'}`;
 
-  // Restore scroll
   useEffect(() => {
     const saved = loadUIState<{ searchTerm: string, scrollY: number, scrollX: number }>('turnover_result');
     if (saved) {
@@ -89,7 +87,6 @@ const CountryTurnoverReportResultScreen: React.FC = () => {
   return (
     <PageShell 
       title="Country Turnover" 
-      // Fixed: clearUIState now exists due to the import above
       onBack={() => { clearUIState('turnover_result'); navigate('/country-turnover'); }}
       actions={
         <ReportHeaderActions 
@@ -153,7 +150,7 @@ const CountryTurnoverReportResultScreen: React.FC = () => {
                   <td className="px-2 py-3 text-right text-[10px] font-black text-orange-600 tabular-nums">{formatNum(row.backOrder)}</td>
                 </tr>
               ))}
-              <tr className="bg-slate-50 border-t-2 border-slate-200">
+              <tr className="bg-slate-50 border-t-2 border-slate-200 font-bold">
                 <td className="px-3 py-4 text-[10px] font-black text-slate-900">{SUBTOTAL.label}</td>
                 <td className="px-2 py-4 text-right text-[10px] font-black text-red-600 tabular-nums">{formatNum(SUBTOTAL.salesValue)}</td>
                 <td className="px-2 py-4 text-right text-[10px] font-black text-red-600 tabular-nums">{formatNum(SUBTOTAL.y2023)}</td>
@@ -162,7 +159,7 @@ const CountryTurnoverReportResultScreen: React.FC = () => {
                 <td className="px-2 py-4 text-right text-[10px] font-black text-red-600 tabular-nums">{formatNum(SUBTOTAL.y2026)}</td>
                 <td className="px-2 py-4 text-right text-[10px] font-black text-red-600 tabular-nums">{formatNum(SUBTOTAL.sameDay)}</td>
                 <td className="px-2 py-4 text-right text-[10px] font-black text-red-600 tabular-nums">{formatNum(SUBTOTAL.diffAmount)}</td>
-                <td className="px-2 py-4 text-right"></td>
+                <td className="px-2 py-4 text-right text-[10px] font-black text-red-600 tabular-nums">0</td>
                 <td className="px-2 py-4 text-right text-[10px] font-black text-red-600 tabular-nums">{formatNum(SUBTOTAL.backOrder)}</td>
               </tr>
             </tbody>

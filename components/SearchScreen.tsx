@@ -66,7 +66,7 @@ const SearchItemCard = memo(({ item, onAdd, qty, onQtyChange, onNavigate }: any)
 const SearchScreen: React.FC = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
   
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState<SearchItemRaw[]>([]);
@@ -80,18 +80,21 @@ const SearchScreen: React.FC = () => {
       setSearchText(saved.searchText || '');
       setResults(saved.results || []);
       setQuantities(saved.quantities || {});
-      setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = saved.scrollY; }, 50);
+      // Delay to ensure DOM is ready for scroll
+      setTimeout(() => { 
+        if (scrollRef.current) scrollRef.current.scrollTop = saved.scrollY;
+      }, 100);
     }
   }, []);
 
-  const handleStateSave = () => {
+  const handleStateSave = useCallback(() => {
     saveUIState('catalog_search', {
       searchText,
       results,
       quantities,
       scrollY: scrollRef.current?.scrollTop || 0
     });
-  };
+  }, [searchText, results, quantities]);
 
   const handleSearch = async () => {
     if (!searchText.trim()) return;
@@ -103,19 +106,25 @@ const SearchScreen: React.FC = () => {
         const qtys = { ...quantities };
         resp.data.forEach(item => { if (!qtys[getUniqueKey(item)]) qtys[getUniqueKey(item)] = 1; });
         setQuantities(qtys);
-        handleStateSave();
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (results.length > 0) handleStateSave();
+  }, [results, handleStateSave]);
+
   const updateSearchQty = (id: string, delta: number) => {
     setQuantities(prev => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
   };
 
   return (
-    <PageShell title="Search Catalog" onBack={() => { sessionStorage.removeItem('ui_state_catalog_search'); navigate('/dashboard'); }}>
+    <PageShell 
+      title="Search Catalog" 
+      onBack={() => { sessionStorage.removeItem('ui_state_catalog_search'); navigate('/dashboard'); }}
+    >
       <div onClick={() => { handleStateSave(); navigate('/cart'); }} className="cursor-pointer active:opacity-75">
         <CartSummaryBar />
       </div>
@@ -136,26 +145,39 @@ const SearchScreen: React.FC = () => {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4" onScroll={handleStateSave}>
+      <div 
+        ref={(el) => { (scrollRef as any).current = el; }}
+        className="flex-1 overflow-y-auto p-4 space-y-4" 
+        onScroll={handleStateSave}
+      >
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center space-y-4 opacity-50">
             <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
             <p className="text-[10px] font-black uppercase tracking-widest">Searching...</p>
           </div>
-        ) : results.map((item) => (
-          <SearchItemCard 
-            key={getUniqueKey(item)} 
-            item={item} 
-            qty={quantities[getUniqueKey(item)] || 1} 
-            onQtyChange={updateSearchQty} 
-            onAdd={() => { addToCart(item, quantities[getUniqueKey(item)] || 1); setToast({ message: 'Added to cart', visible: true }); setTimeout(() => setToast(p => ({ ...p, visible: false })), 1000); }}
-            onNavigate={() => { handleStateSave(); navigate(`/item-details/${encodeURIComponent(item.ArtNr)}/${encodeURIComponent(item.Brand)}/${item.ImageName ? 'product' : 'no_image'}`); }}
-          />
-        ))}
+        ) : results.length > 0 ? (
+          results.map((item) => (
+            <SearchItemCard 
+              key={getUniqueKey(item)} 
+              item={item} 
+              qty={quantities[getUniqueKey(item)] || 1} 
+              onQtyChange={updateSearchQty} 
+              onAdd={() => { addToCart(item, quantities[getUniqueKey(item)] || 1); setToast({ message: 'Added to cart', visible: true }); setTimeout(() => setToast(p => ({ ...p, visible: false })), 1000); }}
+              onNavigate={() => { handleStateSave(); navigate(`/item-details/${encodeURIComponent(item.ArtNr)}/${encodeURIComponent(item.Brand)}/${item.ImageName ? 'product' : 'no_image'}`); }}
+            />
+          ))
+        ) : (
+          <div className="py-32 flex flex-col items-center justify-center opacity-20 text-center">
+            <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p className="text-sm font-black uppercase tracking-[0.2em]">Enter query above</p>
+          </div>
+        )}
       </div>
 
       {toast.visible && (
-        <div className="fixed top-[45%] left-1/2 -translate-x-1/2 z-[250] bg-slate-900 text-white px-8 py-4 rounded-3xl shadow-2xl flex flex-col items-center">
+        <div className="fixed top-[45%] left-1/2 -translate-x-1/2 z-[250] bg-slate-900 text-white px-8 py-4 rounded-3xl shadow-2xl flex flex-col items-center animate-in zoom-in duration-300">
           <span className="text-[12px] font-black uppercase tracking-[0.2em]">{toast.message}</span>
         </div>
       )}

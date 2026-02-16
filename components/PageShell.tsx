@@ -12,10 +12,6 @@ interface PageShellProps {
   className?: string;
 }
 
-/**
- * PageShell provides a consistent, safe-area aware layout for all screens.
- * It handles the header, the main scroll area, and the optional footer.
- */
 const PageShell: React.FC<PageShellProps> = ({
   title,
   onBack,
@@ -33,7 +29,7 @@ const PageShell: React.FC<PageShellProps> = ({
         WebkitUserSelect: 'none'
       }}
     >
-      {/* Safe-Area Aware Header */}
+      {/* Header handled inside PageShell if title provided */}
       {title && (
         <BrandingHeader 
           title={title} 
@@ -53,9 +49,9 @@ const PageShell: React.FC<PageShellProps> = ({
         {children}
       </main>
 
-      {/* Optional Footer */}
+      {/* Optional Footer (fixed at bottom of screen, safe-area aware) */}
       {footer && (
-        <footer className="shrink-0 bg-white border-t border-slate-100">
+        <footer className="shrink-0 bg-white border-t border-slate-100 z-40">
           {footer}
         </footer>
       )}
