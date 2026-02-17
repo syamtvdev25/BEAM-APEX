@@ -6,6 +6,11 @@ import { User, AppContextType } from './types';
 import { CartProvider } from './context/CartContext';
 import LoginScreen from './components/LoginScreen';
 import DashboardScreen from './components/DashboardScreen';
+import EmployeeDashboard from './components/employee/EmployeeDashboard';
+import EmployeeModulePage from './components/employee/EmployeeModulePage';
+import EmployeeItemDetailsScreen from './components/employee/EmployeeItemDetailsScreen';
+import EmployeeCriteriaScreen from './components/employee/EmployeeCriteriaScreen';
+import EmployeePartsListScreen from './components/employee/EmployeePartsListScreen';
 import ERPScreen from './components/ERPScreen';
 import BackorderAvailabilityScreen from './components/BackorderAvailabilityScreen';
 import CountryTurnoverReportScreen from './components/CountryTurnoverReportScreen';
@@ -49,10 +54,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Hide native splash screen once React is mounted and ready
-    SplashScreen.hide().catch(() => {
-      // Ignore errors on web platform where splash screen isn't present
-    });
+    SplashScreen.hide().catch(() => {});
 
     const savedToken = sessionStorage.getItem('apex_token');
     const savedAuthUser = localStorage.getItem('authUser');
@@ -70,7 +72,9 @@ const App: React.FC = () => {
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     try {
       const response = await loginApi(username, password);
+      // Source of Truth Payload Handling
       if (response.success && response.token) {
+        const rawUserType = response.userType || 'CUSTOMER';
         const userData: User = {
           username,
           userId: username,
@@ -78,7 +82,7 @@ const App: React.FC = () => {
           customerName: response.customerName || '',
           displayName: response.customerName || username,
           country: response.country || '',
-          userType: response.userType || 'User',
+          userType: rawUserType.toUpperCase(), // Store as "APEX" or "CUSTOMER"
           role: response.userType || 'User',
           token: response.token
         };
@@ -105,8 +109,32 @@ const App: React.FC = () => {
         <MemoryRouter initialEntries={['/login']}>
           <div className="min-h-screen bg-gray-50 flex flex-col">
             <Routes>
-              <Route path="/login" element={!user ? <LoginScreen /> : <Navigate to="/dashboard" replace />} />
+              {/* Login Redirection Decision */}
+              <Route 
+                path="/login" 
+                element={!user ? <LoginScreen /> : <Navigate to={user.userType === 'APEX' ? "/employee" : "/dashboard"} replace />} 
+              />
+              
+              {/* Dashboards */}
               <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
+              <Route path="/employee" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
+
+              {/* Employee Specific Module Routes */}
+              <Route path="/employee/home" element={<ProtectedRoute><EmployeeModulePage title="HOME" /></ProtectedRoute>} />
+              <Route path="/employee/pc" element={<ProtectedRoute><EmployeeModulePage title="PC" /></ProtectedRoute>} />
+              <Route path="/employee/cv" element={<ProtectedRoute><EmployeeModulePage title="CV" /></ProtectedRoute>} />
+              <Route path="/employee/axles" element={<ProtectedRoute><EmployeeModulePage title="Axles" /></ProtectedRoute>} />
+              <Route path="/employee/engines" element={<ProtectedRoute><EmployeeModulePage title="Engines" /></ProtectedRoute>} />
+              <Route path="/employee/apex-import" element={<ProtectedRoute><EmployeeModulePage title="Apex Import" /></ProtectedRoute>} />
+              <Route path="/employee/magma-import" element={<ProtectedRoute><EmployeeModulePage title="Magma Import" /></ProtectedRoute>} />
+              <Route path="/employee/part-no-oe" element={<ProtectedRoute><EmployeeModulePage title="Part No - OE" /></ProtectedRoute>} />
+              <Route path="/employee/search-by-description" element={<ProtectedRoute><EmployeeModulePage title="Search By Description" /></ProtectedRoute>} />
+              <Route path="/employee/batteries" element={<ProtectedRoute><EmployeeModulePage title="Batteries" /></ProtectedRoute>} />
+              <Route path="/employee/item/:id" element={<ProtectedRoute><EmployeeItemDetailsScreen /></ProtectedRoute>} />
+              <Route path="/employee/criteria" element={<ProtectedRoute><EmployeeCriteriaScreen /></ProtectedRoute>} />
+              <Route path="/employee/parts-list" element={<ProtectedRoute><EmployeePartsListScreen /></ProtectedRoute>} />
+
+              {/* Shared / Existing Routes */}
               <Route path="/erp" element={<ProtectedRoute><ERPScreen /></ProtectedRoute>} />
               <Route path="/backorder-list" element={<ProtectedRoute><BackorderAvailabilityScreen /></ProtectedRoute>} />
               <Route path="/country-turnover" element={<ProtectedRoute><CountryTurnoverReportScreen /></ProtectedRoute>} />
@@ -130,7 +158,12 @@ const App: React.FC = () => {
               <Route path="/bearings" element={<ProtectedRoute><BearingsScreen /></ProtectedRoute>} />
               <Route path="/batteries" element={<ProtectedRoute><BatteriesScreen /></ProtectedRoute>} />
               <Route path="/import" element={<ProtectedRoute><ImportScreen /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
+              
+              {/* Universal Guard */}
+              <Route 
+                path="*" 
+                element={<Navigate to={user ? (user.userType === 'APEX' ? "/employee" : "/dashboard") : "/login"} replace />} 
+              />
             </Routes>
           </div>
         </MemoryRouter>
