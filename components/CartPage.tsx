@@ -66,26 +66,31 @@ const CartPage: React.FC = () => {
           <div className="py-24 text-center opacity-30 flex flex-col items-center">
              <p className="uppercase font-black tracking-[0.2em] text-[10px] text-slate-400">Empty Tab</p>
           </div>
-        ) : displayItems.map(item => (
-          <div key={item.id} className="bg-white rounded-[28px] p-4 shadow-sm border border-slate-100 flex items-center space-x-4">
-             <div className="flex flex-1 items-center space-x-4 min-w-0" onClick={() => { handleStateSave(); navigate(`/product/${encodeURIComponent(item.ArtNr)}`, { state: item }); }}>
-                <ProductThumb imageName={item.ImageName} size={96} className="w-16 h-16 rounded-2xl" />
-                <div className="flex-1 min-w-0">
-                   <h4 className="text-[13px] font-black text-slate-900 truncate">{item.ArtNr}</h4>
-                   <p className="text-[10px] text-slate-500 uppercase italic truncate">{item.Bez}</p>
-                   <p className="text-[10px] font-black text-blue-900 mt-1">{item.Curr} {item.isPriced ? item.Price.toFixed(2) : 'OFFER REQ'}</p>
-                </div>
-             </div>
-             <div className="flex items-center space-x-2">
-                <div className="flex items-center bg-slate-50 border border-slate-100 rounded-xl p-0.5">
-                   <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center font-black">-</button>
-                   <span className="w-5 text-center text-xs font-black">{item.qty}</span>
-                   <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center font-black">+</button>
-                </div>
-                <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 text-red-500">×</button>
-             </div>
-          </div>
-        ))}
+        ) : displayItems.map(item => {
+          // Standardized image name resolution
+          const resolvedImageName = item.ImageName || (item.ArtNr ? `${item.ArtNr.trim()}.JPG` : '');
+          
+          return (
+            <div key={item.id} className="bg-white rounded-[28px] p-4 shadow-sm border border-slate-100 flex items-center space-x-4">
+               <div className="flex flex-1 items-center space-x-4 min-w-0" onClick={() => { handleStateSave(); navigate(`/product/${encodeURIComponent(item.ArtNr)}`, { state: item }); }}>
+                  <ProductThumb imageName={resolvedImageName} size={96} className="w-16 h-16 rounded-2xl" />
+                  <div className="flex-1 min-w-0">
+                     <h4 className="text-[13px] font-black text-slate-900 truncate">{item.ArtNr}</h4>
+                     <p className="text-[10px] text-slate-500 uppercase italic truncate">{item.Bez}</p>
+                     <p className="text-[10px] font-black text-blue-900 mt-1">{item.Curr} {item.isPriced ? item.Price.toFixed(2) : 'OFFER REQ'}</p>
+                  </div>
+               </div>
+               <div className="flex items-center space-x-2">
+                  <div className="flex items-center bg-slate-50 border border-slate-100 rounded-xl p-0.5">
+                     <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center font-black">-</button>
+                     <span className="w-5 text-center text-xs font-black">{item.qty}</span>
+                     <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center font-black">+</button>
+                  </div>
+                  <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 text-red-500">×</button>
+               </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="p-6 bg-white border-t border-slate-100 shadow-inner">

@@ -56,6 +56,9 @@ const CartSelectionScreen: React.FC = () => {
     navigate('/search');
   };
 
+  // Standardized image name resolution
+  const resolvedImageName = item.ImageName || (item.ArtNr ? `${item.ArtNr.trim()}.JPG` : '');
+
   return (
     <div className="flex-1 flex flex-col bg-slate-50 h-screen overflow-hidden">
       <header 
@@ -81,7 +84,7 @@ const CartSelectionScreen: React.FC = () => {
           <div className="p-6">
             <div className="flex items-start space-x-6">
               <ProductThumb 
-                imageName={item.ImageName} 
+                imageName={resolvedImageName} 
                 size={200}
                 className="w-24 h-24 rounded-[24px]"
               />

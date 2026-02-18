@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import PageShell from '../PageShell';
 
@@ -8,7 +8,7 @@ const SectionHeader: React.FC<{ title: string; subtitle?: string; icon?: React.R
     <div className="flex items-center space-x-3">
       {icon && <div className="text-blue-900">{icon}</div>}
       <div>
-        <h3 className="text-[10px] font-black text-blue-900 uppercase tracking-[0.2em] leading-none">{title}</h3>
+        <h3 className="text-[10px] font-black text-blue-900 uppercase tracking-[0.25em] leading-none">{title}</h3>
         {subtitle && <p className="text-[8px] font-bold text-slate-400 uppercase mt-1 tracking-widest">{subtitle}</p>}
       </div>
     </div>
@@ -27,28 +27,70 @@ const InfoRow: React.FC<{ label: string; value: string | number; mono?: boolean 
 const KpiCard: React.FC<{ label: string; value: string | number; color?: string; onClick: () => void }> = ({ label, value, color = "text-blue-900", onClick }) => (
   <button 
     onClick={onClick}
-    className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.97] transition-all text-left flex flex-col justify-between min-h-[100px]"
+    className="bg-white px-4 py-2.5 rounded-xl border border-slate-100 shadow-sm active:scale-[0.98] transition-all text-left flex items-center justify-between min-h-[64px]"
   >
-    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-tight mb-2">{label}</span>
-    <div className="flex items-baseline space-x-1">
-      <span className={`text-2xl font-black ${color} tracking-tighter`}>{value}</span>
-      <span className="text-[8px] font-bold text-slate-300 uppercase">Unit</span>
+    <div className="flex flex-col flex-1 min-w-0">
+      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1.5 truncate">{label}</span>
+      <div className="flex items-baseline space-x-1.5">
+        <span className={`text-lg font-black ${color} tracking-tight`}>{value}</span>
+        <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">Unit</span>
+      </div>
     </div>
-    <div className="mt-2 flex justify-end">
-       <svg className="w-3 h-3 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"/></svg>
+    <svg className="w-3 h-3 text-slate-200 shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"/>
+    </svg>
+  </button>
+);
+
+const SalesHeroCard: React.FC<{ value: string | number; onClick: () => void }> = ({ value, onClick }) => (
+  <button 
+    onClick={onClick}
+    className="w-full bg-gradient-to-br from-blue-900 to-[#003d7a] rounded-2xl px-6 py-3.5 shadow-lg shadow-blue-900/10 text-left relative overflow-hidden active:scale-[0.98] transition-all group animate-in fade-in zoom-in-98 duration-300"
+  >
+    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8 group-hover:scale-110 transition-transform duration-700" />
+    <div className="relative z-10 flex items-center justify-between">
+      <div className="flex items-center space-x-4">
+        <span className="text-[9px] font-black text-blue-300 uppercase tracking-[0.2em]">Total Sales</span>
+        <span className="text-2xl font-black text-white tracking-tighter">{value}</span>
+      </div>
+      <div className="flex items-center space-x-3">
+        <span className="text-[8px] font-bold text-blue-400 uppercase tracking-widest opacity-80">Units Consumed</span>
+        <svg className="w-3 h-3 text-blue-400/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"/>
+        </svg>
+      </div>
     </div>
   </button>
 );
 
-const SalesHistoryCard: React.FC<{ year: string; value: string | number; isTotal?: boolean }> = ({ year, value, isTotal }) => (
-  <div className={`shrink-0 flex flex-col justify-center min-w-[100px] h-20 rounded-2xl border p-4 transition-all ${isTotal ? 'bg-blue-900 border-blue-900 shadow-lg shadow-blue-900/20' : 'bg-white border-slate-100 shadow-sm'}`}>
-    <span className={`text-[8px] font-black uppercase tracking-widest mb-1 ${isTotal ? 'text-blue-200' : 'text-slate-400'}`}>
-      {year}
-    </span>
-    <span className={`text-sm font-black tracking-tight ${isTotal ? 'text-white' : 'text-slate-900'}`}>
-      {value}
-    </span>
-  </div>
+const YearlyKpiCard: React.FC<{ 
+  year: string; 
+  value: string | number; 
+  trend?: 'up' | 'down' | 'neutral'; 
+  isPeak?: boolean;
+  onClick: () => void 
+}> = ({ year, value, trend, isPeak, onClick }) => (
+  <button 
+    onClick={onClick}
+    className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm flex flex-col justify-between min-h-[82px] active:scale-[0.97] transition-all text-left relative group hover:border-blue-100"
+  >
+    <div className="flex justify-between items-start">
+      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{year}</span>
+      {trend === 'up' && <span className="text-[10px] text-emerald-500 font-bold leading-none">↑</span>}
+      {trend === 'down' && <span className="text-[10px] text-rose-400 font-bold leading-none">↓</span>}
+      {isPeak && (
+        <div className="absolute -top-1.5 -right-1 bg-orange-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm uppercase">Peak</div>
+      )}
+    </div>
+    <div className="mt-1 flex items-baseline justify-between">
+      <span className={`text-lg font-black tracking-tight ${value === '—' ? 'text-slate-200' : 'text-slate-800'}`}>
+        {value}
+      </span>
+      <svg className="w-2.5 h-2.5 text-slate-200 group-hover:text-blue-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M9 5l7 7-7 7"/>
+      </svg>
+    </div>
+  </button>
 );
 
 const EmployeeERPPage: React.FC = () => {
@@ -59,6 +101,10 @@ const EmployeeERPPage: React.FC = () => {
 
   const navigateToMetric = (type: string) => {
     navigate(`/erp/metric/${type}/${encodeURIComponent(artNr || '')}`, { state: itemData });
+  };
+
+  const navigateToYearlyHistory = (year: string) => {
+    alert(`Sales History Drill-Down: Year ${year}`);
   };
 
   const salesHistoryData = [
@@ -73,6 +119,20 @@ const EmployeeERPPage: React.FC = () => {
     { year: '2017', value: '96' },
   ];
 
+  // Helper to determine visual trend
+  const getTrend = (index: number) => {
+    if (index >= salesHistoryData.length - 1) return 'neutral';
+    const current = parseInt(salesHistoryData[index].value) || 0;
+    const previous = parseInt(salesHistoryData[index + 1].value) || 0;
+    if (current > previous) return 'up';
+    if (current < previous) return 'down';
+    return 'neutral';
+  };
+
+  const maxSalesValue = useMemo(() => {
+    return Math.max(...salesHistoryData.map(d => parseInt(d.value) || 0));
+  }, [salesHistoryData]);
+
   return (
     <PageShell title="ERP Data Context" onBack={() => navigate(-1)}>
       <div className="flex-1 bg-slate-50 overflow-y-auto scroll-smooth animate-in fade-in duration-300">
@@ -81,7 +141,6 @@ const EmployeeERPPage: React.FC = () => {
           {/* COMPACT TWO-COLUMN HEADER BLOCK */}
           <header className="bg-white rounded-[28px] p-5 shadow-sm border border-slate-100">
             <div className="flex flex-col space-y-2">
-              {/* Row 1 */}
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] truncate pr-4">
                   {itemData?.Brand || 'BORGWARNER'}
@@ -90,8 +149,6 @@ const EmployeeERPPage: React.FC = () => {
                   SX-01
                 </span>
               </div>
-
-              {/* Row 2 */}
               <div className="flex justify-between items-baseline">
                 <h2 className="text-2xl font-black text-blue-900 uppercase tracking-tight leading-none font-mono truncate pr-4">
                    {artNr || itemData?.ArtNr}
@@ -100,8 +157,6 @@ const EmployeeERPPage: React.FC = () => {
                   MERCEDES-BENZ TRUCK
                 </span>
               </div>
-
-              {/* Row 3 */}
               <div className="flex justify-between items-center">
                 <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-tight truncate pr-4">
                   DB CAB SUSPENSION DAMPER
@@ -127,25 +182,49 @@ const EmployeeERPPage: React.FC = () => {
           {/* 2) ERP STOCK STATUS (OPERATIONAL KPIs) */}
           <section>
             <SectionHeader title="ERP Stock Status" subtitle="Live Operational Metrics" />
-            
             <div className="px-1 mb-5">
               <p className="text-[11px] font-bold text-slate-400 leading-relaxed uppercase tracking-tight">
                 {itemData?.Bez || 'Article description loading...'}
               </p>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <KpiCard label="Client Backorder" value="40" onClick={() => navigateToMetric('client-backorder')} />
               <KpiCard label="Reserved Stock" value="12" onClick={() => navigateToMetric('reserved')} />
-              <KpiCard label="Under Packing" value="8" color="text-orange-600" onClick={() => navigateToMetric('under-packing')} />
-              <KpiCard label="Balance Quantity" value="156" color="text-emerald-600" onClick={() => navigateToMetric('balance')} />
+              <KpiCard label="Under Packing" value="8" color="text-orange-500" onClick={() => navigateToMetric('under-packing')} />
+              <KpiCard label="Balance Quantity" value="156" color="text-emerald-500" onClick={() => navigateToMetric('balance')} />
               <div className="col-span-2">
                 <KpiCard label="Under Counting / Verification" value="0" onClick={() => navigateToMetric('verification')} />
               </div>
             </div>
           </section>
 
-          {/* 3) PURCHASE INFO (SUPPLY PIPELINE) */}
+          {/* 3) SALES HISTORY (HISTORICAL KPI DASHBOARD) */}
+          <section>
+            <SectionHeader title="Sales History" subtitle="Yearly Performance" />
+            <div className="space-y-3">
+               <SalesHeroCard 
+                 value="722" 
+                 onClick={() => navigateToYearlyHistory('All Time')} 
+               />
+               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                 {salesHistoryData.map((item, idx) => (
+                   <YearlyKpiCard 
+                     key={item.year} 
+                     year={item.year} 
+                     value={item.value} 
+                     trend={getTrend(idx)}
+                     isPeak={parseInt(item.value) === maxSalesValue}
+                     onClick={() => navigateToYearlyHistory(item.year)}
+                   />
+                 ))}
+               </div>
+            </div>
+            <div className="mt-6 flex justify-center opacity-10">
+              <div className="w-12 h-1 bg-slate-900 rounded-full" />
+            </div>
+          </section>
+
+          {/* 4) PURCHASE INFO (SUPPLY PIPELINE) */}
           <section>
             <SectionHeader title="Purchase Info" subtitle="Inbound Logistics" />
             <div className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-100">
@@ -157,7 +236,7 @@ const EmployeeERPPage: React.FC = () => {
             </div>
           </section>
 
-          {/* 4) SALES DETAILS (COMMERCIAL RULES) */}
+          {/* 5) SALES DETAILS (COMMERCIAL RULES) */}
           <section>
             <SectionHeader title="Sales Details" subtitle="Commercial Configuration" />
             <div className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-100">
@@ -173,22 +252,6 @@ const EmployeeERPPage: React.FC = () => {
                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Remarks (Sales)</p>
                    <p className="text-[11px] font-bold text-slate-600 leading-relaxed uppercase">Internal stock transfer pending approval.</p>
                  </div>
-               </div>
-            </div>
-          </section>
-
-          {/* 5) SALES HISTORY (HISTORICAL KPI) */}
-          <section>
-            <SectionHeader title="Sales History" subtitle="Yearly Performance Trends" />
-            <div className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-100 overflow-hidden">
-               <div className="flex items-center overflow-x-auto no-scrollbar gap-3 pb-2 -mx-1 px-1">
-                 <SalesHistoryCard year="Total Sales" value="722" isTotal />
-                 {salesHistoryData.map((item) => (
-                   <SalesHistoryCard key={item.year} year={item.year} value={item.value} />
-                 ))}
-               </div>
-               <div className="mt-4 flex justify-center">
-                 <div className="w-8 h-1 bg-slate-100 rounded-full" />
                </div>
             </div>
           </section>

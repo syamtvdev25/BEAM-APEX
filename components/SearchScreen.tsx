@@ -8,12 +8,43 @@ import CartSummaryBar from './CartSummaryBar';
 import PageShell from './PageShell';
 import { saveUIState, loadUIState } from '../utils/uiState';
 import { ProductThumb } from './ProductThumb';
+import { productImageUrl } from '../utils/productImage';
 
 const getUniqueKey = (item: SearchItemRaw) => {
   const normalizedArtNr = (item.ArtNr || '').trim().replace(/\s+/g, '');
   const brand = (item.Brand || '').trim();
   const suffix = (item.GArtNr || 'REF').trim();
   return `${normalizedArtNr}|${brand}|${suffix}`.toUpperCase();
+};
+
+/**
+ * Customer-only image component to handle absolute URL rendering and error fallbacks
+ */
+const CustomerSearchImage = ({ item }: { item: SearchItemRaw }) => {
+  const [hasError, setHasError] = useState(false);
+  const src = (item.ImageUrl || "").trim();
+
+  const placeholder = (
+    <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 shadow-inner">
+      <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    </div>
+  );
+
+  if (!src || hasError) return placeholder;
+
+  return (
+    <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+      <img
+        src={src}
+        alt={item.Bez || item.ArtNr}
+        className="w-full h-full object-cover"
+        loading="lazy"
+        onError={() => setHasError(true)}
+      />
+    </div>
+  );
 };
 
 const SearchItemCard = memo(({ item, onAdd, qty, onQtyChange, onNavigate, isEmployee }: any) => {
@@ -24,36 +55,85 @@ const SearchItemCard = memo(({ item, onAdd, qty, onQtyChange, onNavigate, isEmpl
   const currency = item.Curr || 'AED';
   const stockValue = item.Stock && item.Stock !== '0' ? item.Stock : 'N/A';
   const isOutOfStock = stockValue === 'N/A' || stockValue === '0';
+  
+  // Unified replacement detection logic
+  const hasReplacement = !!(item.Replaced && item.Replaced.trim() !== "");
+
+  // Standardized image name resolution (Employee/Fallback use only)
+  const resolvedImageName = item.ImageName || (item.ArtNr ? `${item.ArtNr.trim().replace(/\s+/g, '')}.JPG` : '');
+
+  // Role-based debugging
+  if (!isEmployee) {
+    console.log("CUSTOMER_IMGURL", item.ArtNr, item.ImageUrl);
+  } else if ((import.meta as any).env?.DEV) {
+    console.debug("SEARCH_IMG_DEBUG", item.ArtNr, productImageUrl(resolvedImageName));
+  }
 
   return (
     <div className="w-full bg-white rounded-[32px] p-5 flex flex-col shadow-sm border border-slate-100 hover:border-blue-100 transition-all">
-      <div onClick={onNavigate} className="flex items-start justify-between space-x-4 cursor-pointer active:opacity-70 transition-opacity">
+      <div onClick={onNavigate} className="flex items-start justify-between space-x-3 cursor-pointer active:opacity-70 transition-opacity">
         <div className="flex flex-1 space-x-4 min-w-0">
           <div className="flex flex-col items-center shrink-0">
-            <ProductThumb 
-              imageName={item.ImageName} 
-              size={64} 
-              alt={item.Bez || item.ArtNr} 
-            />
+            {/* Role-based Image Rendering */}
+            {!isEmployee ? (
+              <CustomerSearchImage item={item} />
+            ) : (
+              <ProductThumb 
+                imageName={resolvedImageName} 
+                size={64} 
+                alt={item.Bez || item.ArtNr} 
+              />
+            )}
+            
             {isEmployee && (
               <button 
                 onClick={(e) => { e.stopPropagation(); navigate(`/erp/${encodeURIComponent(item.ArtNr)}`, { state: item }); }}
                 className="mt-3 w-16 h-10 bg-[#003366] text-white rounded-xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all border border-white/10"
               >
-                <svg className="w-3.5 h-3.5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                <svg className="w-3.5 h-3.5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 v2M7 7h10" /></svg>
                 <span className="text-[8px] font-black uppercase leading-none">ERP</span>
               </button>
             )}
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">{item.Brand}</span>
-            <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase font-mono">{item.ArtNr}</h3>
-            <p className="text-[10px] text-slate-500 mt-1 line-clamp-2 uppercase leading-tight">{item.Bez}</p>
+            <div className="flex items-baseline space-x-2 min-w-0">
+              <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase font-mono shrink-0">{item.ArtNr}</h3>
+            </div>
+            
+            {hasReplacement && (
+              <div className="flex flex-col mt-1">
+                <div className="flex items-center space-x-1.5 overflow-hidden">
+                  <span className="bg-amber-50 text-amber-600 text-[7px] font-black px-1 py-0.5 rounded border border-amber-100 uppercase shrink-0">
+                    REPLACED
+                  </span>
+                  <span className="text-[7px] font-bold text-amber-500 uppercase tracking-tighter leading-none truncate whitespace-nowrap">
+                    Newer version available
+                  </span>
+                </div>
+                {!isEmployee && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); navigate(`/replacement/${item.ArtNr}`, { state: item }); }}
+                    className="text-[9px] font-black text-blue-600 uppercase tracking-widest mt-1 hover:text-blue-800 text-left"
+                  >
+                    View Replacement →
+                  </button>
+                )}
+              </div>
+            )}
+
+            <p className="text-[10px] text-slate-500 mt-1 line-clamp-2 uppercase leading-tight tracking-tight">{item.Bez}</p>
           </div>
         </div>
-        <div className="bg-slate-50/80 rounded-2xl p-3 border border-slate-100 shrink-0 flex flex-col items-end min-w-[110px]">
-           <label className="text-[8px] font-black text-slate-400 uppercase mb-1">Unit Price</label>
-           <p className={`text-sm font-black ${hasPrice ? 'text-slate-900' : 'text-slate-300'}`}>{hasPrice ? `${currency} ${price.toFixed(2)}` : 'N/A'}</p>
+
+        <div className="w-20 shrink-0 flex flex-col items-end justify-center py-2 px-2 bg-slate-50/40 rounded-2xl border border-slate-100/50 self-center">
+           <label className="text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Price</label>
+           <div className="flex flex-col items-end">
+              <span className="text-[8px] font-bold text-slate-400 leading-none">{currency}</span>
+              <span className={`text-xs font-black tracking-tighter ${hasPrice ? 'text-slate-900' : 'text-slate-300'} leading-tight`}>
+                {hasPrice ? price.toFixed(2) : 'N/A'}
+              </span>
+           </div>
         </div>
       </div>
 
@@ -94,7 +174,6 @@ const SearchScreen: React.FC = () => {
       setSearchText(saved.searchText || '');
       setResults(saved.results || []);
       setQuantities(saved.quantities || {});
-      // Delay to ensure DOM is ready for scroll
       setTimeout(() => { 
         if (scrollRef.current) scrollRef.current.scrollTop = saved.scrollY;
       }, 100);

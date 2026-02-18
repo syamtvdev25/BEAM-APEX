@@ -10,6 +10,7 @@ export interface SearchItemRaw {
   Brand: string;
   Bez: string;
   ImageName: string;
+  ImageUrl?: string;
   Status: string;
   Replaced: string;
   Price: string | number;
