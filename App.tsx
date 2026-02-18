@@ -12,6 +12,7 @@ import EmployeeItemDetailsScreen from './components/employee/EmployeeItemDetails
 import EmployeeCriteriaScreen from './components/employee/EmployeeCriteriaScreen';
 import EmployeePartsListScreen from './components/employee/EmployeePartsListScreen';
 import EmployeeERPPage from './components/employee/EmployeeERPPage';
+import ERPMetricDetail from './components/employee/ERPMetricDetail';
 import ProductDetails from './components/employee/ProductDetails';
 import ReplacementHistory from './components/employee/ReplacementHistory';
 import ERPScreen from './components/ERPScreen';
@@ -135,6 +136,7 @@ const App: React.FC = () => {
               <Route path="/product/:artNr" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
               <Route path="/replacement/:artNr" element={<ProtectedRoute><ReplacementHistory /></ProtectedRoute>} />
               <Route path="/erp/:artNr" element={<ProtectedRoute><EmployeeERPPage /></ProtectedRoute>} />
+              <Route path="/erp/metric/:type/:artNr" element={<ProtectedRoute><ERPMetricDetail /></ProtectedRoute>} />
               
               <Route path="/employee/item/:id" element={<ProtectedRoute><EmployeeItemDetailsScreen /></ProtectedRoute>} />
               <Route path="/employee/criteria" element={<ProtectedRoute><EmployeeCriteriaScreen /></ProtectedRoute>} />
