@@ -4,10 +4,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import PageShell from '../PageShell';
 import { useAuth } from '../../App';
+import { StatusBadge } from './BadgeComponents';
+import { ProductThumb } from '../ProductThumb';
 
 const STORAGE_KEY = "emp_search_state_v2";
 
-type OemSearchItem = {
+export type OemSearchItem = {
   ArtNr: string;
   Bez: string;
   ImageName?: string;
@@ -32,7 +34,8 @@ const EmployeeDashboard: React.FC = () => {
   const { pathname } = useLocation();
   const { logout, user } = useAuth();
   
-  // Define menuItems for Employee Dashboard to fix 'Cannot find name' error
+  const isEmployee = user?.userType === 'APEX';
+
   const menuItems: EmployeeMenuItem[] = useMemo(() => [
     { label: 'HOME', path: '/employee/home', color: 'bg-blue-50 text-blue-900', icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg> },
     { label: 'PC', path: '/employee/pc', color: 'bg-indigo-50 text-indigo-900', icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg> },
@@ -52,10 +55,6 @@ const EmployeeDashboard: React.FC = () => {
   const [showEmptyError, setShowEmptyError] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   
-  // Chain States
-  const [replacementChain, setReplacementChain] = useState<OemSearchItem[] | null>(null);
-  const [chainRoot, setChainRoot] = useState<string>("");
-
   const requestIdRef = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -66,9 +65,7 @@ const EmployeeDashboard: React.FC = () => {
   const hasActiveSearch = searchTerm.trim().length > 0;
   const showSearchPanel = hasActiveSearch || isSearching || searchResults.length > 0 || !!searchError;
 
-  const normalizeKey = (val: string = "") => val.trim().replace(/\s+/g, '').toUpperCase();
-
-  // 1. Restore State on Mount
+  // Restore State
   useEffect(() => {
     const saved = sessionStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -78,23 +75,19 @@ const EmployeeDashboard: React.FC = () => {
         if (parsed.searchResults) setSearchResults(parsed.searchResults);
         if (parsed.searchError) setSearchError(parsed.searchError);
         if (parsed.lastQuery) setLastQuery(parsed.lastQuery);
-        if (parsed.replacementChain) setReplacementChain(parsed.replacementChain);
-        if (parsed.chainRoot) setChainRoot(parsed.chainRoot);
         
         if (parsed.scrollTop && scrollRef.current) {
           requestAnimationFrame(() => {
             if (scrollRef.current) scrollRef.current.scrollTop = parsed.scrollTop;
           });
         }
-      } catch (e) {
-        console.error("Failed to restore search state", e);
-      }
+      } catch (e) {}
     }
   }, []);
 
-  // 2. Persist State Changes
+  // Persist State
   useEffect(() => {
-    if (!showSearchPanel && !searchTerm && !replacementChain) {
+    if (!showSearchPanel && !searchTerm) {
       sessionStorage.removeItem(STORAGE_KEY);
       return;
     }
@@ -103,14 +96,11 @@ const EmployeeDashboard: React.FC = () => {
       searchResults,
       searchError,
       lastQuery,
-      replacementChain,
-      chainRoot,
       scrollTop: scrollRef.current?.scrollTop || 0
     };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [searchTerm, searchResults, searchError, lastQuery, showSearchPanel, replacementChain, chainRoot]);
+  }, [searchTerm, searchResults, searchError, lastQuery, showSearchPanel]);
 
-  // Client-side filtering logic
   const filteredResults = useMemo(() => {
     if (activeFilter === 'All') return searchResults;
     return searchResults.filter(item => {
@@ -139,8 +129,6 @@ const EmployeeDashboard: React.FC = () => {
     setSearchResults([]);
     setSearchError('');
     setLastQuery('');
-    setReplacementChain(null);
-    setChainRoot("");
     setActiveFilter('All');
     setShowEmptyError(false);
     sessionStorage.removeItem(STORAGE_KEY);
@@ -153,12 +141,8 @@ const EmployeeDashboard: React.FC = () => {
       return;
     }
     setShowEmptyError(false);
-
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     
-    setReplacementChain(null);
-    setChainRoot("");
-
     const currentId = ++requestIdRef.current;
     setIsSearching(true);
     setSearchError('');
@@ -166,7 +150,6 @@ const EmployeeDashboard: React.FC = () => {
     try {
       const response = await fetch(`https://ecom.apexgulf.ae/apex/API/APIOemSearch.ashx?q=${encodeURIComponent(trimmed)}`);
       const json = await response.json();
-
       if (currentId !== requestIdRef.current) return;
 
       if (json.success) {
@@ -197,133 +180,61 @@ const EmployeeDashboard: React.FC = () => {
       return;
     }
     if (trimmed === lastQuery) return;
-
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => {
-      executeSearch(trimmed);
-    }, 600);
-
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    };
+    debounceTimerRef.current = setTimeout(() => executeSearch(trimmed), 600);
+    return () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current); };
   }, [searchTerm, lastQuery]);
 
-  // Local Chain Algorithm
-  const buildReplacementChain = (startArtNr: string): OemSearchItem[] => {
-    const index = new Map<string, OemSearchItem>();
-    searchResults.forEach(item => {
-      index.set(normalizeKey(item.ArtNr), item);
-    });
-
-    const chain: OemSearchItem[] = [];
-    const visited = new Set<string>();
-    let currentKey = normalizeKey(startArtNr);
-
-    while (currentKey && !visited.has(currentKey)) {
-      const item = index.get(currentKey);
-      if (!item) break;
-      chain.push(item);
-      visited.add(currentKey);
-      if (!item.Replaced || item.Replaced.trim() === "") break;
-      currentKey = normalizeKey(item.Replaced);
-    }
-    return chain;
-  };
-
-  const handleOpenChain = (artNr: string) => {
-    const chain = buildReplacementChain(artNr);
-    if (chain.length > 0) {
-      setReplacementChain(chain);
-      setChainRoot(artNr);
-    }
-  };
-
-  const getStatusStyle = (status: string = '') => {
-    const s = status.toLowerCase();
-    if (s.includes('normal') || s.includes('active')) return 'bg-green-50 text-green-700 border-green-100';
-    if (s.includes('not available')) return 'bg-red-50 text-red-700 border-red-100';
-    if (s.includes('no longer supplied')) return 'bg-orange-50 text-orange-700 border-orange-100';
-    return 'bg-gray-50 text-gray-500 border-gray-100';
-  };
-
-  const ResultCard = ({ item, isChainStep = false, isLast = false }: { item: OemSearchItem, isChainStep?: boolean, isLast?: boolean }) => (
+  const ResultCard: React.FC<{ item: OemSearchItem }> = ({ item }) => (
     <div 
-      onClick={() => isChainStep ? navigate(`/employee/item/${item.ArtNr}`, { state: item }) : handleOpenChain(item.ArtNr)}
-      className={`w-full text-left bg-white rounded-[24px] p-4 border shadow-sm flex gap-4 active:scale-[0.99] transition-all group relative overflow-hidden ${isLast ? 'ring-2 ring-green-500/30 bg-green-50/10 border-green-200' : 'border-slate-100'}`}
+      onClick={() => navigate(`/product/${item.ArtNr}`, { state: item })}
+      className="w-full text-left bg-white rounded-[24px] p-4 border shadow-sm flex gap-4 active:scale-[0.98] transition-all group relative overflow-hidden border-slate-100 hover:border-blue-100 shadow-blue-900/5"
     >
-      <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-slate-50 shadow-inner">
-        <img 
-          loading="lazy"
-          decoding="async"
-          src={item.ImageUrl || '/assets/branding/no-image.jpg'} 
-          alt="" 
-          className="w-full h-full object-contain p-1"
-          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/f1f5f9/94a3b8?text=No+Image'; }}
-        />
-      </div>
+      <ProductThumb 
+        imageName={item.ImageName} 
+        size={64} 
+        className="shrink-0" 
+      />
 
       <div className="flex-1 min-w-0 flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-start mb-0.5">
             <span className="text-[10px] font-black text-[#F37021] uppercase tracking-wider">{item.Brand}</span>
-            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border uppercase shadow-sm ${getStatusStyle(item.Status)}`}>
-              {item.Status || 'UNKNOWN'}
-            </span>
+            <StatusBadge status={item.Status} hasHistory={!!(item.Replaced && item.Replaced.trim().length > 0)} />
           </div>
           <div className="flex items-center space-x-2">
-            <h4 className="text-sm font-black text-slate-900 font-mono tracking-tight">Part No: {item.ArtNr}</h4>
-            {isLast && isChainStep && (
-              <span className="bg-green-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-widest animate-pulse">LATEST</span>
-            )}
+            <h4 className="text-sm font-black text-slate-900 font-mono tracking-tight uppercase whitespace-nowrap overflow-hidden text-ellipsis">
+              Part No: {item.ArtNr}
+            </h4>
           </div>
-          
-          {item.Replaced && item.Replaced.trim().length > 0 && (
-            <div 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenChain(item.ArtNr);
-              }}
-              className="mt-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center justify-between active:bg-amber-100 transition-all group/repl"
-            >
-               <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-amber-600 uppercase tracking-[0.2em] leading-none mb-0.5 flex items-center">
-                    <svg className="w-2.5 h-2.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
-                    Replaced By
-                  </span>
-                  <span className="text-xs font-black text-amber-900 leading-none underline decoration-amber-300 underline-offset-2">{item.Replaced}</span>
-               </div>
-               <svg className="w-4 h-4 text-amber-400 group-hover/repl:text-amber-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" />
-               </svg>
+          <p className="text-[10px] font-bold text-slate-500 line-clamp-2 mt-1 leading-snug uppercase tracking-tight opacity-70">
+            {item.Bez}
+          </p>
+        </div>
+
+        {isEmployee && (
+          <div className="mt-2 flex items-center justify-between border-t border-slate-50 pt-2">
+            <div className="flex flex-col min-w-0">
+              <span className="text-[8px] font-black text-slate-300 uppercase leading-none mb-1">Supplier</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase truncate pr-2 max-w-[120px]">{item.Apex_Supp_Name}</span>
             </div>
-          )}
-
-          <p className="text-[10px] font-bold text-slate-500 line-clamp-2 mt-2 leading-snug uppercase tracking-tight opacity-80">{item.Bez}</p>
-        </div>
-
-        <div className="mt-2 flex items-center justify-between border-t border-slate-50 pt-2">
-          <div className="flex flex-col min-w-0">
-            <span className="text-[8px] font-black text-slate-300 uppercase leading-none mb-1">Supplier</span>
-            <span className="text-[9px] font-black text-slate-400 uppercase truncate pr-2 max-w-[120px]">{item.Apex_Supp_Name}</span>
+            
+            <div className="flex items-center space-x-1 shrink-0">
+               <button 
+                  onClick={(e) => { e.stopPropagation(); navigate(`/employee/criteria?artnr=${item.ArtNr}`); }}
+                  className="w-8 h-8 bg-slate-50 rounded-lg border border-slate-200 text-slate-400 active:scale-90 active:bg-blue-900 active:text-white transition-all shadow-sm flex items-center justify-center"
+               >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+               </button>
+               <button 
+                  onClick={(e) => { e.stopPropagation(); navigate(`/employee/parts-list?artnr=${item.ArtNr}`); }}
+                  className="w-8 h-8 bg-slate-50 rounded-lg border border-slate-200 text-slate-400 active:scale-90 active:bg-orange-600 active:text-white transition-all shadow-sm flex items-center justify-center"
+               >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+               </button>
+            </div>
           </div>
-          
-          <div className="flex items-center space-x-1.5 shrink-0">
-             <button 
-                onClick={(e) => { e.stopPropagation(); navigate(`/employee/criteria?artnr=${item.ArtNr}`); }}
-                className="w-[44px] h-[44px] bg-slate-50 rounded-lg border border-slate-200 text-slate-600 active:scale-90 active:bg-blue-900 active:text-white transition-all shadow-sm flex items-center justify-center"
-                title="Technical Criteria"
-             >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-             </button>
-             <button 
-                onClick={(e) => { e.stopPropagation(); navigate(`/employee/parts-list?artnr=${item.ArtNr}`); }}
-                className="w-[44px] h-[44px] bg-slate-50 rounded-lg border border-slate-200 text-slate-600 active:scale-90 active:bg-orange-600 active:text-white transition-all shadow-sm flex items-center justify-center"
-                title="Parts List / BOM"
-             >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-             </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -343,7 +254,7 @@ const EmployeeDashboard: React.FC = () => {
 
   return (
     <PageShell 
-      title={`Hi, ${user?.customerName || 'Employee'}`} 
+      title={`Hi, ${user?.customerName || 'Enterprise'}`} 
       onBack={undefined} 
       actions={
         <button onClick={handleLogout} className="p-2.5 bg-white/10 border border-white/20 rounded-xl text-white active:scale-90 transition-all shadow-sm">
@@ -359,7 +270,7 @@ const EmployeeDashboard: React.FC = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           </button>
           <div className="bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-tighter">v1.1.0</span>
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-tighter">v1.1.2</span>
           </div>
         </div>
       }
@@ -370,7 +281,8 @@ const EmployeeDashboard: React.FC = () => {
            const top = e.currentTarget.scrollTop;
            setShowBackToTop(top > 400);
            if (scrollRef.current) {
-              const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '{}');
+              const savedString = sessionStorage.getItem(STORAGE_KEY);
+              const saved = savedString ? JSON.parse(savedString) : {};
               sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, scrollTop: top }));
            }
         }}
@@ -378,7 +290,6 @@ const EmployeeDashboard: React.FC = () => {
       >
         <div className="max-w-4xl mx-auto p-5 space-y-4">
           
-          {/* ERP Polish Search Bar */}
           <div className="space-y-2 mb-2">
             <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-row items-stretch">
               <div className="relative flex-1">
@@ -415,10 +326,8 @@ const EmployeeDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Results Area */}
           {showSearchPanel && (
             <div className="space-y-4 animate-in fade-in duration-300">
-              {/* Premium Results Header */}
               <div className="flex flex-col space-y-3 px-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -432,7 +341,6 @@ const EmployeeDashboard: React.FC = () => {
                   <span className="text-[9px] font-black text-slate-300 uppercase">{searchResults.length} Items Found</span>
                 </div>
                 
-                {/* Client Side Filter Chips */}
                 <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
                   <FilterChip type="All" label="All" />
                   <FilterChip type="Active" label="Active / Normal" />
@@ -443,15 +351,16 @@ const EmployeeDashboard: React.FC = () => {
 
               {isSearching && (
                 <div className="space-y-3">
-                  <div className="bg-white rounded-2xl p-4 border border-slate-100 flex gap-4 animate-pulse"><div className="w-16 h-16 bg-slate-100 rounded-xl"></div><div className="flex-1 space-y-2"><div className="h-3 bg-slate-100 rounded w-1/4"></div><div className="h-4 bg-slate-100 rounded w-3/4"></div></div></div>
-                  <div className="bg-white rounded-2xl p-4 border border-slate-100 flex gap-4 animate-pulse"><div className="w-16 h-16 bg-slate-100 rounded-xl"></div><div className="flex-1 space-y-2"><div className="h-3 bg-slate-100 rounded w-1/4"></div><div className="h-4 bg-slate-100 rounded w-3/4"></div></div></div>
+                  {[1,2].map(i => (
+                    <div key={i} className="bg-white rounded-2xl p-4 border border-slate-100 flex gap-4 animate-pulse"><div className="w-16 h-16 bg-slate-100 rounded-xl"></div><div className="flex-1 space-y-2"><div className="h-3 bg-slate-100 rounded w-1/4"></div><div className="h-4 bg-slate-100 rounded w-3/4"></div></div></div>
+                  ))}
                 </div>
               )}
 
               {searchError && !isSearching && (
                 <div className="py-10 text-center bg-white rounded-3xl border border-slate-100 shadow-sm px-6">
-                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                    <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-300">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                   </div>
                   <h4 className="text-sm font-black text-slate-900 uppercase">No results found</h4>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">Try another Part No, OEM, or description.</p>
@@ -474,7 +383,6 @@ const EmployeeDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Module Grid - Shown only when not searching */}
           {!showSearchPanel && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="px-1 mb-4 flex items-center">
@@ -507,7 +415,6 @@ const EmployeeDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Back to top FAB */}
         {showBackToTop && (
           <button 
             onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -517,76 +424,6 @@ const EmployeeDashboard: React.FC = () => {
           </button>
         )}
       </div>
-
-      {/* Replacement Chain Premium Drawer */}
-      {replacementChain && (
-        <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden animate-in fade-in duration-300">
-           <div onClick={() => setReplacementChain(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-           
-           <div className="relative mt-auto h-[90vh] bg-white rounded-t-[32px] shadow-2xl flex flex-col animate-in slide-in-from-bottom-10 duration-500">
-              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mt-3 shrink-0" />
-              <header className="px-6 py-5 border-b border-slate-50 flex flex-col shrink-0">
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                       <button onClick={() => setReplacementChain(null)} className="p-2 -ml-2 rounded-full active:bg-slate-100 transition-colors">
-                          <svg className="w-6 h-6 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
-                       </button>
-                       <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Replacement History</h2>
-                    </div>
-                    <button onClick={() => setReplacementChain(null)} className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-xl active:bg-slate-100 transition-all">Close</button>
-                 </div>
-                 <div className="mt-3 flex items-center space-x-2">
-                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">Tracing:</span>
-                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{chainRoot}</span>
-                 </div>
-              </header>
-
-              <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/30">
-                 <div className="space-y-6 relative">
-                    <div className="absolute left-[34px] top-8 bottom-8 w-0.5 bg-slate-100 z-0" />
-                    
-                    {replacementChain.map((item, idx) => (
-                      <div key={idx} className="relative z-10 flex gap-4">
-                         <div className="w-12 flex flex-col items-center">
-                            <div className="w-8 h-8 rounded-full bg-blue-900 border-4 border-white shadow-sm flex items-center justify-center text-white">
-                               <span className="text-[9px] font-black">{idx + 1}</span>
-                            </div>
-                         </div>
-                         <div className="flex-1 min-w-0">
-                            <ResultCard item={item} isChainStep={true} isLast={idx === replacementChain.length - 1 && !item.Replaced} />
-                         </div>
-                      </div>
-                    ))}
-
-                    <div className="pt-4 px-2">
-                       {replacementChain[replacementChain.length - 1].Replaced ? (
-                         <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center space-x-3 opacity-80">
-                            <svg className="w-5 h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                            <p className="text-[9px] font-black text-orange-700 uppercase tracking-widest leading-relaxed">
-                               Next replacement ({replacementChain[replacementChain.length - 1].Replaced}) not found in local results.
-                            </p>
-                         </div>
-                       ) : (
-                         <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center space-x-3">
-                            <svg className="w-5 h-5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                            <p className="text-[9px] font-black text-green-700 uppercase tracking-widest leading-none">Latest known replacement reached.</p>
-                         </div>
-                       )}
-                    </div>
-                 </div>
-              </div>
-
-              <footer className="p-6 border-t border-slate-50 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
-                 <button 
-                   onClick={() => setReplacementChain(null)}
-                   className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl active:scale-95 transition-all"
-                 >
-                    Dismiss Drawer
-                 </button>
-              </footer>
-           </div>
-        </div>
-      )}
     </PageShell>
   );
 };

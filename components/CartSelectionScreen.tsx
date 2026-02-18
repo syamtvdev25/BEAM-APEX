@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { SearchItemRaw, searchLiteApi } from '../api/searchApi';
 import { User } from '../types';
 import { useCart } from '../context/CartContext';
+import { ProductThumb } from './ProductThumb';
 
 const CartSelectionScreen: React.FC = () => {
   const location = useLocation();
@@ -79,14 +80,11 @@ const CartSelectionScreen: React.FC = () => {
         <div className="bg-white rounded-[32px] shadow-xl shadow-blue-900/5 border border-white overflow-hidden animate-in zoom-in-95 duration-300">
           <div className="p-6">
             <div className="flex items-start space-x-6">
-              <div className="w-24 h-24 bg-slate-50 rounded-[24px] border border-slate-100 flex items-center justify-center shrink-0 shadow-inner">
-                <img 
-                  src={`https://ecom.apexgulf.ae/apex/Images/Items/${item.ImageName}`} 
-                  alt="Item"
-                  className="max-w-[80%] max-h-[80%] object-contain"
-                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/f1f5f9/94a3b8?text=No+Image'; }}
-                />
-              </div>
+              <ProductThumb 
+                imageName={item.ImageName} 
+                size={200}
+                className="w-24 h-24 rounded-[24px]"
+              />
               <div className="flex-1 min-w-0">
                 <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">{item.Brand}</span>
                 <h1 className="text-2xl font-black text-slate-900 leading-tight mt-1 truncate">{item.ArtNr}</h1>

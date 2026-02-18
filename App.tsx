@@ -11,6 +11,8 @@ import EmployeeModulePage from './components/employee/EmployeeModulePage';
 import EmployeeItemDetailsScreen from './components/employee/EmployeeItemDetailsScreen';
 import EmployeeCriteriaScreen from './components/employee/EmployeeCriteriaScreen';
 import EmployeePartsListScreen from './components/employee/EmployeePartsListScreen';
+import ProductDetails from './components/employee/ProductDetails';
+import ReplacementHistory from './components/employee/ReplacementHistory';
 import ERPScreen from './components/ERPScreen';
 import BackorderAvailabilityScreen from './components/BackorderAvailabilityScreen';
 import CountryTurnoverReportScreen from './components/CountryTurnoverReportScreen';
@@ -72,7 +74,6 @@ const App: React.FC = () => {
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     try {
       const response = await loginApi(username, password);
-      // Source of Truth Payload Handling
       if (response.success && response.token) {
         const rawUserType = response.userType || 'CUSTOMER';
         const userData: User = {
@@ -82,7 +83,7 @@ const App: React.FC = () => {
           customerName: response.customerName || '',
           displayName: response.customerName || username,
           country: response.country || '',
-          userType: rawUserType.toUpperCase(), // Store as "APEX" or "CUSTOMER"
+          userType: rawUserType.toUpperCase(),
           role: response.userType || 'User',
           token: response.token
         };
@@ -109,13 +110,11 @@ const App: React.FC = () => {
         <MemoryRouter initialEntries={['/login']}>
           <div className="min-h-screen bg-gray-50 flex flex-col">
             <Routes>
-              {/* Login Redirection Decision */}
               <Route 
                 path="/login" 
                 element={!user ? <LoginScreen /> : <Navigate to={user.userType === 'APEX' ? "/employee" : "/dashboard"} replace />} 
               />
               
-              {/* Dashboards */}
               <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
               <Route path="/employee" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
 
@@ -130,6 +129,11 @@ const App: React.FC = () => {
               <Route path="/employee/part-no-oe" element={<ProtectedRoute><EmployeeModulePage title="Part No - OE" /></ProtectedRoute>} />
               <Route path="/employee/search-by-description" element={<ProtectedRoute><EmployeeModulePage title="Search By Description" /></ProtectedRoute>} />
               <Route path="/employee/batteries" element={<ProtectedRoute><EmployeeModulePage title="Batteries" /></ProtectedRoute>} />
+              
+              {/* Upgraded Replacement & Details Flow */}
+              <Route path="/product/:artNr" element={<ProtectedRoute><ProductDetails /></ProtectedRoute>} />
+              <Route path="/replacement/:artNr" element={<ProtectedRoute><ReplacementHistory /></ProtectedRoute>} />
+              
               <Route path="/employee/item/:id" element={<ProtectedRoute><EmployeeItemDetailsScreen /></ProtectedRoute>} />
               <Route path="/employee/criteria" element={<ProtectedRoute><EmployeeCriteriaScreen /></ProtectedRoute>} />
               <Route path="/employee/parts-list" element={<ProtectedRoute><EmployeePartsListScreen /></ProtectedRoute>} />
@@ -159,7 +163,6 @@ const App: React.FC = () => {
               <Route path="/batteries" element={<ProtectedRoute><BatteriesScreen /></ProtectedRoute>} />
               <Route path="/import" element={<ProtectedRoute><ImportScreen /></ProtectedRoute>} />
               
-              {/* Universal Guard */}
               <Route 
                 path="*" 
                 element={<Navigate to={user ? (user.userType === 'APEX' ? "/employee" : "/dashboard") : "/login"} replace />} 

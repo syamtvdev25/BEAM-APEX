@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import CartSummaryBar from './CartSummaryBar';
 import PageShell from './PageShell';
 import { saveUIState, loadUIState } from '../utils/uiState';
+import { ProductThumb } from './ProductThumb';
 
 const getUniqueKey = (item: SearchItemRaw) => {
   const normalizedArtNr = (item.ArtNr || '').trim().replace(/\s+/g, '');
@@ -26,17 +27,14 @@ const SearchItemCard = memo(({ item, onAdd, qty, onQtyChange, onNavigate }: any)
     <div className="w-full bg-white rounded-[32px] p-5 flex flex-col shadow-sm border border-slate-100 hover:border-blue-100 transition-all">
       <div onClick={onNavigate} className="flex items-start justify-between space-x-4 cursor-pointer active:opacity-70 transition-opacity">
         <div className="flex flex-1 space-x-4 min-w-0">
-          <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shrink-0 overflow-hidden relative shadow-inner">
-             <img 
-              src={`https://ecom.apexgulf.ae/apex/Images/Items/${item.ImageName}`} 
-              alt="" 
-              className="w-14 h-14 object-contain"
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/60x60/f8fafc/94a3b8?text=' + (item.Brand?.[0] || '?'); }}
-            />
-          </div>
+          <ProductThumb 
+            imageName={item.ImageName} 
+            size={64} 
+            alt={item.Bez || item.ArtNr} 
+          />
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">{item.Brand}</span>
-            <h3 className="text-lg font-black text-slate-900 leading-tight truncate">{item.ArtNr}</h3>
+            <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase font-mono">{item.ArtNr}</h3>
             <p className="text-[10px] text-slate-500 mt-1 line-clamp-2 uppercase leading-tight">{item.Bez}</p>
           </div>
         </div>
@@ -163,7 +161,7 @@ const SearchScreen: React.FC = () => {
               qty={quantities[getUniqueKey(item)] || 1} 
               onQtyChange={updateSearchQty} 
               onAdd={() => { addToCart(item, quantities[getUniqueKey(item)] || 1); setToast({ message: 'Added to cart', visible: true }); setTimeout(() => setToast(p => ({ ...p, visible: false })), 1000); }}
-              onNavigate={() => { handleStateSave(); navigate(`/item-details/${encodeURIComponent(item.ArtNr)}/${encodeURIComponent(item.Brand)}/${item.ImageName ? 'product' : 'no_image'}`); }}
+              onNavigate={() => { handleStateSave(); navigate(`/product/${encodeURIComponent(item.ArtNr)}`, { state: item }); }}
             />
           ))
         ) : (

@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import CartSummaryBar from './CartSummaryBar';
 import PageShell from './PageShell';
 import { saveUIState, loadUIState } from '../utils/uiState';
+import { ProductThumb } from './ProductThumb';
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -67,10 +68,8 @@ const CartPage: React.FC = () => {
           </div>
         ) : displayItems.map(item => (
           <div key={item.id} className="bg-white rounded-[28px] p-4 shadow-sm border border-slate-100 flex items-center space-x-4">
-             <div className="flex flex-1 items-center space-x-4 min-w-0" onClick={() => { handleStateSave(); navigate(`/item-details/${encodeURIComponent(item.ArtNr)}/${encodeURIComponent(item.Brand)}/${item.ImageName ? 'product' : 'no_image'}`); }}>
-                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden">
-                   <img src={`https://ecom.apexgulf.ae/apex/Images/Items/${item.ImageName}`} className="w-10 h-10 object-contain" onError={(e) => { (e.target as any).src='https://placehold.co/40'; }} />
-                </div>
+             <div className="flex flex-1 items-center space-x-4 min-w-0" onClick={() => { handleStateSave(); navigate(`/product/${encodeURIComponent(item.ArtNr)}`, { state: item }); }}>
+                <ProductThumb imageName={item.ImageName} size={96} className="w-16 h-16 rounded-2xl" />
                 <div className="flex-1 min-w-0">
                    <h4 className="text-[13px] font-black text-slate-900 truncate">{item.ArtNr}</h4>
                    <p className="text-[10px] text-slate-500 uppercase italic truncate">{item.Bez}</p>
