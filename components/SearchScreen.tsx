@@ -3,6 +3,7 @@ import React, { useState, useCallback, memo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchLiteApi, SearchItemRaw } from '../api/searchApi';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../App';
 import CartSummaryBar from './CartSummaryBar';
 import PageShell from './PageShell';
 import { saveUIState, loadUIState } from '../utils/uiState';
@@ -15,7 +16,8 @@ const getUniqueKey = (item: SearchItemRaw) => {
   return `${normalizedArtNr}|${brand}|${suffix}`.toUpperCase();
 };
 
-const SearchItemCard = memo(({ item, onAdd, qty, onQtyChange, onNavigate }: any) => {
+const SearchItemCard = memo(({ item, onAdd, qty, onQtyChange, onNavigate, isEmployee }: any) => {
+  const navigate = useNavigate();
   const id = getUniqueKey(item);
   const price = typeof item.Price === 'string' ? parseFloat(item.Price) : (item.Price || 0);
   const hasPrice = price > 0;
@@ -27,11 +29,22 @@ const SearchItemCard = memo(({ item, onAdd, qty, onQtyChange, onNavigate }: any)
     <div className="w-full bg-white rounded-[32px] p-5 flex flex-col shadow-sm border border-slate-100 hover:border-blue-100 transition-all">
       <div onClick={onNavigate} className="flex items-start justify-between space-x-4 cursor-pointer active:opacity-70 transition-opacity">
         <div className="flex flex-1 space-x-4 min-w-0">
-          <ProductThumb 
-            imageName={item.ImageName} 
-            size={64} 
-            alt={item.Bez || item.ArtNr} 
-          />
+          <div className="flex flex-col items-center shrink-0">
+            <ProductThumb 
+              imageName={item.ImageName} 
+              size={64} 
+              alt={item.Bez || item.ArtNr} 
+            />
+            {isEmployee && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); navigate(`/erp/${encodeURIComponent(item.ArtNr)}`, { state: item }); }}
+                className="mt-3 w-16 h-10 bg-[#003366] text-white rounded-xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all border border-white/10"
+              >
+                <svg className="w-3.5 h-3.5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                <span className="text-[8px] font-black uppercase leading-none">ERP</span>
+              </button>
+            )}
+          </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">{item.Brand}</span>
             <h3 className="text-lg font-black text-slate-900 leading-tight truncate uppercase font-mono">{item.ArtNr}</h3>
@@ -64,6 +77,7 @@ const SearchItemCard = memo(({ item, onAdd, qty, onQtyChange, onNavigate }: any)
 const SearchScreen: React.FC = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const scrollRef = useRef<HTMLElement>(null);
   
   const [searchText, setSearchText] = useState('');
@@ -71,6 +85,8 @@ const SearchScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [toast, setToast] = useState({ message: '', visible: false });
+
+  const isEmployee = user?.userType === 'APEX';
 
   useEffect(() => {
     const saved = loadUIState<any>('catalog_search');
@@ -160,6 +176,7 @@ const SearchScreen: React.FC = () => {
               item={item} 
               qty={quantities[getUniqueKey(item)] || 1} 
               onQtyChange={updateSearchQty} 
+              isEmployee={isEmployee}
               onAdd={() => { addToCart(item, quantities[getUniqueKey(item)] || 1); setToast({ message: 'Added to cart', visible: true }); setTimeout(() => setToast(p => ({ ...p, visible: false })), 1000); }}
               onNavigate={() => { handleStateSave(); navigate(`/product/${encodeURIComponent(item.ArtNr)}`, { state: item }); }}
             />

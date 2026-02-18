@@ -190,11 +190,21 @@ const EmployeeDashboard: React.FC = () => {
       onClick={() => navigate(`/product/${item.ArtNr}`, { state: item })}
       className="w-full text-left bg-white rounded-[24px] p-4 border shadow-sm flex gap-4 active:scale-[0.98] transition-all group relative overflow-hidden border-slate-100 hover:border-blue-100 shadow-blue-900/5"
     >
-      <ProductThumb 
-        imageName={item.ImageName} 
-        size={64} 
-        className="shrink-0" 
-      />
+      <div className="flex flex-col items-center shrink-0">
+        <ProductThumb 
+          imageName={item.ImageName} 
+          size={64} 
+        />
+        {isEmployee && (
+           <button 
+             onClick={(e) => { e.stopPropagation(); navigate(`/erp/${encodeURIComponent(item.ArtNr)}`, { state: item }); }}
+             className="mt-3 w-16 h-10 bg-[#003366] text-white rounded-xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all border border-white/10"
+           >
+              <svg className="w-3.5 h-3.5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+              <span className="text-[8px] font-black uppercase leading-none">ERP</span>
+           </button>
+        )}
+      </div>
 
       <div className="flex-1 min-w-0 flex flex-col justify-between">
         <div>
