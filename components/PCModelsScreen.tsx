@@ -1,177 +1,259 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ChevronLeft, Filter, Grid3X3, List, Loader2, RefreshCw, Search, Truck } from './Icons';
+import { buildApiUrl } from '../config/api';
 
-interface ModelItem {
-  id: string;
-  name: string;
-}
+type ApiResponse<T> = {
+  success: boolean;
+  message?: string;
+  data?: T;
+};
 
-const DUMMY_MODELS: ModelItem[] = [
-  { id: '1', name: '260 (P262, P264)' },
-  { id: '2', name: '260 Kombi (P245)' },
-  { id: '3', name: '740 (744)' },
-  { id: '4', name: '740 Kombi (745)' },
-  { id: '5', name: '760 (704, 764)' },
-  { id: '6', name: '760 Kombi (704, 765)' },
-  { id: '7', name: '780 (782)' },
-  { id: '8', name: '850 (854)' },
-  { id: '9', name: '850 Kombi (855)' },
-  { id: '10', name: '940 (944)' },
-  { id: '11', name: '940 Kombi (945)' },
-  { id: '12', name: '940 II (944)' },
-  { id: '13', name: '940 II Kombi (945)' },
-  { id: '14', name: '960 (964)' },
-  { id: '15', name: '960 Kombi (965)' },
-  { id: '16', name: '960 II (964)' },
-  { id: '17', name: '960 II Kombi (965)' },
-  { id: '18', name: 'C30 (533)' },
-  { id: '19', name: 'C70 I Cabriolet (873)' },
-  { id: '20', name: 'C70 I Coupe (872)' },
-  { id: '21', name: 'S40 I (644)' },
-  { id: '22', name: 'V40 Cross Country (526)' },
-  { id: '23', name: 'XC90 I (275)' },
-];
+type VehicleModel = {
+  modelCode: string;
+  model: string;
+};
 
 const PCModelsScreen: React.FC = () => {
   const navigate = useNavigate();
   const { manufacturer } = useParams<{ manufacturer: string }>();
-  
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [filters, setFilters] = useState({
-    manufacturer: (manufacturer || '').toUpperCase(),
-    model: '',
-    brand: '',
-    status: 'All'
+  const mfCode = manufacturer || '';
+
+  const [models, setModels] = useState<VehicleModel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [keyword, setKeyword] = useState('');
+  const [modelSearch, setModelSearch] = useState('');
+  const [articleStatus, setArticleStatus] = useState('all');
+
+  const modelSearchText = modelSearch.trim().toLowerCase();
+
+  const filteredModels = models.filter((m) => {
+    const modelName = String(m.model || '').toLowerCase();
+
+    if (!modelSearchText) return true;
+
+    return (
+      modelName.startsWith(modelSearchText) ||
+      modelName.includes(modelSearchText)
+    );
   });
 
-  const handleModelClick = (modelName: string) => {
-    navigate(`/pc-brands/${manufacturer}/${encodeURIComponent(modelName)}`);
-  };
+  async function loadModels() {
+    if (!mfCode) {
+      setMessage('Manufacturer code is missing');
+      return;
+    }
 
-  const toggleFilters = () => {
-    setIsExpanded(!isExpanded);
-  };
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const url = buildApiUrl('PCHandler.ashx', 'models', { mfCode });
+      const res = await fetch(url, { method: 'GET', credentials: 'include' });
+      const text = await res.text();
+
+      let json: ApiResponse<VehicleModel[]>;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(`Invalid API response: ${text.slice(0, 180)}`);
+      }
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Unable to load models');
+      }
+
+      setModels(json.data || []);
+      setMessage(`${json.data?.length || 0} models found`);
+    } catch (e: any) {
+      setModels([]);
+      setMessage(e.message || 'Unable to load models');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadModels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mfCode]);
+
+  function handleModelClick(model: VehicleModel) {
+    navigate(`/pc-brands/${encodeURIComponent(mfCode)}/${encodeURIComponent(model.modelCode)}`, {
+      state: {
+        manufacturer: mfCode,
+        modelCode: model.modelCode,
+        modelName: model.model,
+      },
+    });
+  }
 
   return (
-    <div className="flex-1 flex flex-col bg-blue-50 h-screen overflow-hidden">
-      {/* Header */}
-      <header className="px-6 py-4 border-b border-blue-100 flex items-center bg-white z-10 shadow-sm shrink-0">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="mr-4 p-2 -ml-2 rounded-full hover:bg-gray-100 text-blue-900 active:scale-90 transition-all"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h2 className="text-xl font-extrabold text-blue-950 uppercase">PC - {manufacturer}</h2>
+    <div className="min-h-screen bg-slate-100 text-slate-950 overflow-hidden">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+        <div className="h-16 px-4 flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="h-10 w-10 rounded-full flex items-center justify-center text-blue-950 hover:bg-slate-100 active:scale-95"
+            aria-label="Back"
+          >
+            <ChevronLeft size={24} strokeWidth={2.7} />
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base font-black text-blue-950 leading-none">PC Search</h1>
+            <p className="mt-1 text-[10px] font-black tracking-widest uppercase text-slate-400 truncate">
+              Passenger Cars - {mfCode || 'Manufacturer'}
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className={`h-10 px-3 rounded-xl flex items-center gap-1.5 text-xs font-black active:scale-95 ${
+              showFilters ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-700'
+            }`}
+          >
+            <Filter size={15} />
+            Filters
+          </button>
+
+          <button
+            onClick={loadModels}
+            className="h-10 w-10 rounded-xl flex items-center justify-center bg-slate-100 text-slate-600 active:scale-95"
+            aria-label="Refresh"
+          >
+            <RefreshCw size={17} />
+          </button>
+        </div>
       </header>
 
-      {/* Responsive Content Area */}
-      <main className="flex-1 overflow-y-auto p-4 flex flex-col lg:flex-row lg:space-x-4 space-y-4 lg:space-y-0">
-        
-        {/* Left Panel: PC Search Filters (Collapsible) */}
-        <aside className="lg:w-80 w-full shrink-0">
-          <div className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden transition-all duration-300 ease-in-out">
-            {/* Clickable Header Bar */}
-            <button 
-              onClick={toggleFilters}
-              className="w-full bg-blue-900 px-5 py-3 flex items-center justify-between active:bg-blue-950 transition-colors"
-            >
-              <h3 className="text-[10px] font-black text-white uppercase tracking-widest">PC Search</h3>
-              <svg 
-                className={`w-4 h-4 text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+      <main className="h-[calc(100vh-64px)] overflow-y-auto p-3 pb-24">
+        {showFilters && (
+          <section className="mb-3 rounded-2xl bg-white border border-slate-200 shadow-sm p-3">
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Manufacturer</label>
+                <input
+                  value={mfCode}
+                  readOnly
+                  className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-500 outline-none"
+                />
+              </div>
 
-            {/* Collapsible Content */}
-            <div 
-              className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-              }`}
-            >
-              <div className="p-5 space-y-4">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Manufacturer</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={filters.manufacturer}
-                    className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-400 cursor-not-allowed outline-none"
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Search Model</label>
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    placeholder="Type model name..."
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Models</label>
-                  <select className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-900 transition-all outline-none text-sm font-bold text-gray-800 appearance-none">
-                    <option value="">Choose Model</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Brand</label>
-                  <select className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-900 transition-all outline-none text-sm font-bold text-gray-800 appearance-none">
-                    <option value="">Choose Brand</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Article Status</label>
-                  <select className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-900 transition-all outline-none text-sm font-bold text-gray-800 appearance-none">
-                    <option value="All">All</option>
-                    <option value="Normal">Normal</option>
-                  </select>
-                </div>
-
-                <button className="w-full py-4 bg-blue-900 text-white font-black rounded-xl shadow-lg shadow-blue-900/10 active:scale-95 transition-all uppercase tracking-widest text-xs mt-2">
-                  SEARCH
-                </button>
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Article Status</label>
+                <select
+                  value={articleStatus}
+                  onChange={(e) => setArticleStatus(e.target.value)}
+                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold outline-none"
+                >
+                  <option value="all">All</option>
+                  <option value="active">Active</option>
+                  <option value="discontinued">Discontinued</option>
+                  <option value="upcoming">Upcoming</option>
+                </select>
               </div>
             </div>
-          </div>
-        </aside>
+          </section>
+        )}
 
-        {/* Right Panel: Models List Grid */}
-        <section className="flex-1">
-          <div className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden h-full flex flex-col">
-             <div className="bg-gray-50 px-5 py-3 border-b border-gray-100">
-              <h3 className="text-[10px] font-black text-blue-900 uppercase tracking-widest">Available Models</h3>
+        {/* Compact manufacturer chip */}
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Manufacturer:</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full text-xs font-black text-blue-700 uppercase">
+            {mfCode}
+          </span>
+        </div>
+
+        <section className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-3 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="h-8 w-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                <Truck size={17} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-sm font-black text-slate-950 uppercase leading-tight">Models</h2>
+                <p className="text-[10px] font-bold text-slate-400 truncate">{filteredModels.length} listed</p>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-0">
-                {DUMMY_MODELS.map((model) => (
+
+            <div className="flex items-center gap-2">
+              {loading && <Loader2 size={17} className="animate-spin text-blue-600" />}
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`h-9 w-9 rounded-xl flex items-center justify-center ${viewMode === 'grid' ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-500'}`}
+              >
+                <Grid3X3 size={16} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`h-9 w-9 rounded-xl flex items-center justify-center ${viewMode === 'list' ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-500'}`}
+              >
+                <List size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div className="px-3 pb-3">
+            <p className="text-[10px] font-black text-red-600 mb-1">
+              MODEL SEARCH VISIBLE
+            </p>
+            <input
+              type="text"
+              value={modelSearch}
+              onChange={(e) => setModelSearch(e.target.value)}
+              placeholder="Search models..."
+              className="w-full h-10 rounded-xl border border-blue-200 bg-white px-3 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+
+          {message && (
+            <div className="mx-3 mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-800">
+              {message}
+            </div>
+          )}
+
+          <div className="p-3">
+            {!loading && filteredModels.length === 0 ? (
+              <div className="py-16 text-center">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No models found</p>
+              </div>
+            ) : (
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2' : 'grid grid-cols-1 gap-2'}>
+                {filteredModels.map((model) => (
                   <button
-                    key={model.id}
-                    onClick={() => handleModelClick(model.name)}
-                    className="group flex flex-col text-left px-3 py-4 border-b border-gray-100 hover:bg-blue-50/50 transition-colors"
+                    key={model.modelCode}
+                    onClick={() => handleModelClick(model)}
+                    className="group text-left rounded-xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-300 hover:shadow-sm active:scale-[0.99] transition-all px-3 py-3"
                   >
-                    <span className="text-blue-600 text-[11px] font-bold underline group-hover:text-blue-800 transition-colors">
-                      {model.name}
+                    <span className="block text-xs font-black text-slate-950 leading-snug group-hover:text-blue-800">
+                      {model.model}
+                    </span>
+                    <span className="mt-1 block text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      Code: {model.modelCode}
                     </span>
                   </button>
                 ))}
               </div>
-              
-              {/* Optional messaging if empty */}
-              {DUMMY_MODELS.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 opacity-20">
-                   <p className="text-sm font-black uppercase tracking-widest">No models found</p>
-                </div>
-              )}
-            </div>
-            
-            <footer className="p-4 bg-gray-50 border-t border-gray-100 text-center">
-               <p className="text-[10px] font-black text-blue-200 uppercase tracking-widest">{DUMMY_MODELS.length} items listed</p>
-            </footer>
+            )}
           </div>
         </section>
-
       </main>
     </div>
   );

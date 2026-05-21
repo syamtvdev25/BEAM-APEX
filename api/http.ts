@@ -3,9 +3,7 @@ import { Capacitor, CapacitorHttp, HttpResponse } from '@capacitor/core';
 
 /**
  * Enterprise Gateway Configuration
- * Using corsproxy.io for web-based CORS bypass to the origin.
  */
-const PROXY_BASE = 'https://corsproxy.io/?';
 const ENTERPRISE_DOMAIN = 'ecom.apexgulf.ae';
 
 /**
@@ -13,12 +11,7 @@ const ENTERPRISE_DOMAIN = 'ecom.apexgulf.ae';
  */
 export async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = sessionStorage.getItem('apex_token');
-  let finalUrl = url;
-  
-  // Apply proxy only on web platform for internal enterprise IP/DDNS
-  if (Capacitor.getPlatform() === 'web' && url.includes(ENTERPRISE_DOMAIN)) {
-    finalUrl = `${PROXY_BASE}${encodeURIComponent(url)}`;
-  }
+  const finalUrl = url;
 
   const headers: Record<string, string> = { 
     'Accept': 'application/json',

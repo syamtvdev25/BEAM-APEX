@@ -29,12 +29,11 @@ const BrandingHeader: React.FC<BrandingHeaderProps> = ({ title, onBack, rightEle
         </svg>
       </button>
       
-      <div className="w-8 h-8 mr-3 bg-white rounded-lg p-1 shadow-sm shrink-0">
+      <div className="w-8 h-8 mr-3 bg-white rounded-lg p-1 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
         <img 
-          src={brandingConfig.logoPath} 
-          alt={brandingConfig.appName}
-          className="w-full h-full object-contain"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          src="/logo.png" 
+          alt="Apex-Ecom"
+          className="h-full w-full object-contain"
         />
       </div>
 

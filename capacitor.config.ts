@@ -8,8 +8,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'http',
     allowNavigation: [
-      'ecom.apexgulf.ae',
-      'corsproxy.io'
+      'ecom.apexgulf.ae'
     ]
   },
   plugins: {

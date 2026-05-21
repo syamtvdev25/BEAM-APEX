@@ -1,8 +1,7 @@
 
-import { fetchJson } from './http';
+import { buildApiUrl } from '../config/api';
 
 const API_KEY = 'TEST123';
-const BASE_URL = 'https://ecom.apexgulf.ae/apex/API/APILogin.ashx';
 
 export interface LoginResponse {
   success: boolean;
@@ -15,11 +14,47 @@ export interface LoginResponse {
 }
 
 /**
- * Authenticates user against the remote Apex server using the shared fetchJson utility.
+ * Authenticates user directly against the remote server using the native browser fetch (CORS mode) and robust error mapping.
  */
 export async function loginApi(userId: string, pass: string): Promise<LoginResponse> {
-  const url = `${BASE_URL}?ApiKey=${API_KEY}&UserId=${encodeURIComponent(userId)}&Password=${encodeURIComponent(pass)}`;
-  
-  // Uses existing fetchJson which handles CapacitorHttp and proxy logic
-  return fetchJson<LoginResponse>(url, { method: 'GET' });
+  const url = buildApiUrl('APILogin.ashx', undefined, {
+    ApiKey: API_KEY,
+    UserId: userId,
+    Password: pass
+  });
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status >= 500) {
+        throw new Error('SERVER_UNAVAILABLE');
+      }
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    if (error.message === 'SERVER_UNAVAILABLE') {
+      throw error;
+    }
+    // Detect standard fetch failure (which indicates a network error or CORS blocker in the browser)
+    if (
+      error instanceof TypeError ||
+      error.name === 'TypeError' ||
+      error.message?.includes('Failed to fetch') ||
+      error.message?.includes('network') ||
+      error.message?.includes('CORS')
+    ) {
+      throw new Error('NETWORK_CORS_ERROR');
+    }
+    throw error;
+  }
 }

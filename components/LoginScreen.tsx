@@ -25,12 +25,14 @@ const LoginScreen: React.FC = () => {
       const success = await login(username, password);
       if (!success) {
         setStatus(AuthState.FAILURE);
-        setError('Invalid username or password');
+        setError('Invalid login');
       }
     } catch (err: any) {
       setStatus(AuthState.FAILURE);
-      if (err.message === 'CONNECTION_ERROR') {
-        setError('Network error: Unable to connect to the server.');
+      if (err.message === 'NETWORK_CORS_ERROR' || err.message === 'CONNECTION_ERROR') {
+        setError('Network/CORS error');
+      } else if (err.message === 'SERVER_UNAVAILABLE') {
+        setError('Server unavailable');
       } else {
         setError(err.message || 'An unexpected error occurred.');
       }
@@ -49,11 +51,11 @@ const LoginScreen: React.FC = () => {
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">{brandingConfig.appName}</h1>
             <p className="text-gray-400 font-medium mt-1">Sign in to your account</p>
           </div>
-          <div className="h-16 w-16 bg-slate-50 rounded-2xl p-2 flex items-center justify-center border border-slate-100 shadow-sm">
-            <img 
-              src={brandingConfig.logoPath} 
-              alt={brandingConfig.appName} 
-              className="max-h-full max-w-full object-contain"
+          <div className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center shadow-md overflow-hidden border border-slate-100">
+            <img
+              src="/logo.png"
+              alt="Apex-Ecom"
+              className="h-full w-full object-cover scale-105"
             />
           </div>
         </div>
@@ -101,7 +103,7 @@ const LoginScreen: React.FC = () => {
         </form>
 
         <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-tighter">
-          <span>Enterprise Portal</span>
+          <span>Authorized Apex Users Only</span>
           <span className="opacity-50">v1.0.0</span>
         </div>
       </div>

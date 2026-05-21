@@ -122,7 +122,7 @@ const App: React.FC = () => {
 
               {/* Employee Specific Module Routes */}
               <Route path="/employee/home" element={<ProtectedRoute><EmployeeModulePage title="HOME" /></ProtectedRoute>} />
-              <Route path="/employee/pc" element={<ProtectedRoute><EmployeeModulePage title="PC" /></ProtectedRoute>} />
+              <Route path="/employee/pc" element={<ProtectedRoute><PCScreen /></ProtectedRoute>} />
               <Route path="/employee/cv" element={<ProtectedRoute><EmployeeModulePage title="CV" /></ProtectedRoute>} />
               <Route path="/employee/axles" element={<ProtectedRoute><EmployeeModulePage title="Axles" /></ProtectedRoute>} />
               <Route path="/employee/engines" element={<ProtectedRoute><EmployeeModulePage title="Engines" /></ProtectedRoute>} />

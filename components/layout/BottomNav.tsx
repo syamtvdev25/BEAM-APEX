@@ -58,14 +58,14 @@ const BottomNav: React.FC = () => {
     <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
       {/* Wave Notch SVG Background (Visual cutout for FAB) */}
       <div className="absolute left-1/2 -translate-x-1/2 -top-6 w-24 h-12 pointer-events-none overflow-hidden">
-        <svg viewBox="0 0 100 40" className="w-full h-full text-slate-900/80 fill-current opacity-95" style={{ backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
+        <svg viewBox="0 0 100 40" className="w-full h-full text-[#070e1b]/95 fill-current opacity-95" style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
           <path d="M0 40 Q50 40 50 0 Q50 40 100 40 Z" />
         </svg>
       </div>
 
       {/* Main Nav Bar */}
       <nav 
-        className="relative bg-slate-900/85 backdrop-blur-xl border-t border-white/10 flex items-center justify-around pointer-events-auto shadow-[0_-10px_40px_rgba(0,0,0,0.3)] h-[58px]"
+        className="relative bg-[#070e1b]/95 backdrop-blur-2xl border-t border-white/[0.08] flex items-center justify-around pointer-events-auto shadow-[0_-12px_45px_rgba(0,0,0,0.5)] h-[60px]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {tabs.map((tab) => {
@@ -77,11 +77,11 @@ const BottomNav: React.FC = () => {
               <div key={tab.id} className="relative w-16 h-full flex items-center justify-center">
                 <button
                   onClick={() => handleTabClick(tab)}
-                  className="absolute -top-7 w-12 h-12 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/40 border-4 border-slate-950 active:scale-90 transition-all z-20"
+                  className="absolute -top-7.5 w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#070e1b] active:scale-90 transition-all z-20"
                 >
                   {tab.icon(isActive)}
                 </button>
-                <span className="absolute bottom-1 text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">
+                <span className="absolute bottom-1.5 text-[8.5px] font-black text-slate-500 uppercase tracking-widest leading-none">
                   {tab.label}
                 </span>
               </div>
@@ -92,18 +92,20 @@ const BottomNav: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab)}
-              className={`flex-1 h-full flex flex-col items-center justify-center transition-all relative ${isActive ? 'text-blue-400' : 'text-slate-500'}`}
+              className={`flex-1 h-full flex flex-col items-center justify-center transition-all relative ${isActive ? 'text-blue-400' : 'text-slate-400 hover:text-slate-300'}`}
             >
               <div className="flex flex-col items-center">
-                {tab.icon(isActive)}
-                <span className="text-[9px] mt-1 font-black uppercase tracking-[0.15em] leading-none">
+                <div className={`transition-all duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(96,165,250,0.6)] text-blue-400' : 'scale-100 opacity-60'}`}>
+                  {tab.icon(isActive)}
+                </div>
+                <span className={`text-[8.5px] mt-1.5 font-black uppercase tracking-[0.16em] leading-none transition-colors ${isActive ? 'text-blue-400' : 'text-slate-500'}`}>
                   {tab.label}
                 </span>
               </div>
               
               {/* Active Indicator Pill */}
               {isActive && (
-                <div className="absolute bottom-1.5 w-1 h-1 bg-blue-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+                <div className="absolute bottom-1.5 w-1.5 h-1.5 bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.8)]" />
               )}
             </button>
           );
